@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { DecoratedPost } from "@/lib/types";
-import { BADGES, formatKarma } from "@/lib/mock-data";
+import { formatKarma } from "@/lib/mock-data";
 import Badge from "@/components/Badge";
 import AdminUserActions from "@/components/AdminUserActions";
 import FollowButton from "@/components/FollowButton";
@@ -221,34 +221,19 @@ export default function ProfileView({
       {isAdmin && !isSelf && <AdminUserActions alias={alias} onToast={onToast} onBadgeChanged={onBadgeChanged} />}
 
       {isSelf && (
-        <>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {[
-              { value: formatKarma(karma), label: "Karma del rincón" },
-              { value: String(mine.length), label: "Hilos abiertos" },
-              { value: String(commentCount), label: "Comentarios" },
-              { value: rank > 0 ? `#${rank}` : "—", label: "En el ranking" },
-            ].map((s) => (
-              <div key={s.label} style={{ flex: "1 1 140px", padding: "16px 18px", borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)", boxShadow: "var(--shadow-sm)" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 26, lineHeight: 1, color: "var(--color-accent-700)" }}>{s.value}</div>
-                <div style={{ fontSize: 12.5, marginTop: 5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 10 }}>
-              Insignias
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {[
+            { value: formatKarma(karma), label: "Karma del rincón" },
+            { value: String(mine.length), label: "Hilos abiertos" },
+            { value: String(commentCount), label: "Comentarios" },
+            { value: rank > 0 ? `#${rank}` : "—", label: "En el ranking" },
+          ].map((s) => (
+            <div key={s.label} style={{ flex: "1 1 140px", padding: "16px 18px", borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 26, lineHeight: 1, color: "var(--color-accent-700)" }}>{s.value}</div>
+              <div style={{ fontSize: 12.5, marginTop: 5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{s.label}</div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {BADGES.map((b) => (
-                <span key={b} className="tag tag-accent" style={{ fontSize: 12.5, padding: "6px 14px" }}>
-                  {b}
-                </span>
-              ))}
-            </div>
-          </div>
-        </>
+          ))}
+        </div>
       )}
 
       <div>

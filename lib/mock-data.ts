@@ -256,11 +256,4 @@ export function formatKarma(n: number): string {
   return String(Math.max(0, Math.round(n)));
 }
 
-export const BADGES = [
-  "☕ Cafeinómana nivel 4",
-  "🎤 Sobrevivió al karaoke",
-  "🔥 Hilo con 300+ votos",
-  "🤝 Organizó 6 quedadas",
-];
-
 export const MY_ANON_ALIAS = "anónimo_2231";
