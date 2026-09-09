@@ -49,6 +49,75 @@ const SCHEMA_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (follower_id, followee_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cat TEXT NOT NULL,
+    author TEXT NOT NULL,
+    author_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    is_anon INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    title TEXT NOT NULL,
+    excerpt TEXT NOT NULL,
+    body TEXT NOT NULL,
+    is_question INTEGER NOT NULL DEFAULT 0,
+    best_answer_id INTEGER,
+    pinned INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE TABLE IF NOT EXISTS poll_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    votes INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE TABLE IF NOT EXISTS poll_votes (
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    option_id INTEGER NOT NULL,
+    PRIMARY KEY (post_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    author TEXT NOT NULL,
+    author_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    is_anon INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    text TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS post_votes (
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    value INTEGER NOT NULL,
+    PRIMARY KEY (post_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS post_likes (
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS comment_likes (
+    comment_id INTEGER NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (comment_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    post_id INTEGER NOT NULL,
+    comment_id INTEGER,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    read INTEGER NOT NULL DEFAULT 0
+  )`,
 ];
 
 async function migrate() {
@@ -78,3 +147,23 @@ async function migrate() {
 
 export const dbReady: Promise<void> = globalThis.__patioDbReady ?? migrate();
 if (process.env.NODE_ENV !== "production") globalThis.__patioDbReady = dbReady;
+
+export type SqlArg = string | number | null;
+export type SqlArgs = SqlArg[] | Record<string, SqlArg>;
+
+export async function run(sql: string, args: SqlArgs = []) {
+  await dbReady;
+  return db.execute({ sql, args });
+}
+
+export async function getOne<T>(sql: string, args: SqlArgs = []): Promise<T | undefined> {
+  await dbReady;
+  const result = await db.execute({ sql, args });
+  return result.rows[0] as unknown as T | undefined;
+}
+
+export async function getAll<T>(sql: string, args: SqlArgs = []): Promise<T[]> {
+  await dbReady;
+  const result = await db.execute({ sql, args });
+  return result.rows as unknown as T[];
+}

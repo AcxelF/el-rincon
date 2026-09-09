@@ -2,40 +2,6 @@ export type View = "feed" | "thread" | "rank" | "profile" | "admin";
 export type SortMode = "Recientes" | "Populares";
 export type VoteValue = -1 | 0 | 1;
 
-export interface Comment {
-  id: number;
-  author: string;
-  time: string;
-  text: string;
-  likes: number;
-}
-
-export interface PollOption {
-  id: number;
-  text: string;
-  votes: number;
-}
-
-export interface Poll {
-  options: PollOption[];
-}
-
-export interface Post {
-  id: number;
-  cat: string;
-  author: string;
-  time: string;
-  votes: number;
-  likes: number;
-  title: string;
-  excerpt: string;
-  body: string;
-  comments: Comment[];
-  poll?: Poll;
-  isQuestion?: boolean;
-  bestAnswerId?: number | null;
-}
-
 export interface ChatMessage {
   me: boolean;
   text: string;

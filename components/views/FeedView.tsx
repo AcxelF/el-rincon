@@ -50,6 +50,7 @@ export default function FeedView({
   onToggleAnon,
   onPublish,
   feedTitle,
+  emptyMessage,
   sort,
   onSortChange,
   posts,
@@ -76,8 +77,9 @@ export default function FeedView({
   isGuest: boolean;
   anon: boolean;
   onToggleAnon: () => void;
-  onPublish: (pollOptions?: string[], isQuestion?: boolean) => boolean;
+  onPublish: (pollOptions?: string[], isQuestion?: boolean) => Promise<boolean>;
   feedTitle: string;
+  emptyMessage: string;
   sort: SortMode;
   onSortChange: (s: SortMode) => void;
   posts: DecoratedPost[];
@@ -138,8 +140,8 @@ export default function FeedView({
     });
   }
 
-  function handlePublish() {
-    const published = onPublish(pollEnabled ? pollOptions : undefined, questionEnabled);
+  async function handlePublish() {
+    const published = await onPublish(pollEnabled ? pollOptions : undefined, questionEnabled);
     if (published) {
       setPollEnabled(false);
       setPollOptions(["", ""]);
@@ -314,9 +316,7 @@ export default function FeedView({
       </div>
 
       {posts.length === 0 && (
-        <div style={{ padding: "28px 22px", textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          No encontramos nada por aquí. Prueba con otra palabra.
-        </div>
+        <div style={{ padding: "28px 22px", textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>{emptyMessage}</div>
       )}
 
       {posts.map((p) => (

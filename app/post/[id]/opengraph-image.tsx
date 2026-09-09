@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { INITIAL_POSTS } from "@/lib/mock-data";
+import { getPost } from "@/lib/posts";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -7,7 +7,7 @@ export const alt = "El Rincón — Científica del Sur";
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const post = INITIAL_POSTS.find((p) => p.id === Number(id));
+  const post = await getPost(Number(id), null);
 
   const category = post?.cat ?? "El Rincón";
   const title = post?.title ?? "El Rincón — foro social de la Científica del Sur";

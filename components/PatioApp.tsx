@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import RailLeft from "@/components/RailLeft";
 import RailRight from "@/components/RailRight";
@@ -12,12 +12,18 @@ import ProfileView from "@/components/views/ProfileView";
 import AdminView from "@/components/views/AdminView";
 import ToastStack, { type ToastItem } from "@/components/ToastStack";
 import BottomNav from "@/components/BottomNav";
-import { CATEGORIES, INITIAL_CHATS, INITIAL_POSTS, MY_ANON_ALIAS, RANKING } from "@/lib/mock-data";
+import { CATEGORIES, INITIAL_CHATS } from "@/lib/mock-data";
 import { initials } from "@/lib/style-helpers";
-import type { AppNotification, Category, Chat, DecoratedComment, DecoratedPoll, DecoratedPost, Post, RankingUser, Report, SortMode, VoteValue, View } from "@/lib/types";
+import type { AppNotification, Category, Chat, DecoratedPost, RankingUser, Report, SortMode, View } from "@/lib/types";
 
 const THEME_KEY = "patio-theme";
 const FOLLOWED_CATEGORIES_KEY = "patio-followed-categories";
+
+interface ProfileStats {
+  karma: number;
+  commentCount: number;
+  rank: number;
+}
 
 export default function PatioApp({
   initialAlias,
@@ -45,29 +51,27 @@ export default function PatioApp({
   const [draft, setDraft] = useState("");
   const [reply, setReply] = useState("");
   const [dmDraft, setDmDraft] = useState("");
-  const [openId, setOpenId] = useState(1);
+  const [openId, setOpenId] = useState<number | null>(null);
   const [chatId, setChatId] = useState(1);
   const [chatOpen, setChatOpen] = useState(false);
-  const [nextId, setNextId] = useState(200);
-  const [votes, setVotes] = useState<Record<number, VoteValue>>({});
-  const [likes, setLikes] = useState<Record<number, boolean>>({});
-  const [cLikes, setCLikes] = useState<Record<number, boolean>>({});
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [posts, setPosts] = useState<DecoratedPost[]>([]);
+  const [openPost, setOpenPost] = useState<DecoratedPost | null>(null);
+  const [threadComments, setThreadComments] = useState<import("@/lib/types").DecoratedComment[]>([]);
+  const [liveRanking, setLiveRanking] = useState<RankingUser[]>([]);
   const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
   const [nextChatId, setNextChatId] = useState(100);
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
-  const [pinnedIds, setPinnedIds] = useState<number[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
-  const [nextReportId, setNextReportId] = useState(1);
   const [badges, setBadges] = useState<Record<string, string>>({});
   const [bios, setBios] = useState<Record<string, string>>({});
-  const [pollVotes, setPollVotes] = useState<Record<number, number>>({});
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [followInfo, setFollowInfo] = useState<{ followers: number; following: number; isFollowing: boolean } | null>(null);
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
   const [followedCategoryIds, setFollowedCategoryIds] = useState<string[]>([]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [profilePosts, setProfilePosts] = useState<DecoratedPost[]>([]);
+  const [profileStats, setProfileStats] = useState<ProfileStats>({ karma: 0, commentCount: 0, rank: 0 });
 
   function pushToast(message: string) {
     const id = Date.now() + Math.random();
@@ -78,6 +82,52 @@ export default function PatioApp({
         setToasts((ts) => ts.filter((t) => t.id !== id));
       }, 200);
     }, 2600);
+  }
+
+  async function refreshPosts() {
+    try {
+      const res = await fetch("/api/posts");
+      const data = await res.json();
+      setPosts(data.posts || []);
+    } catch {
+      // keep whatever posts we already have
+    }
+  }
+
+  async function refreshRanking() {
+    try {
+      const res = await fetch("/api/ranking");
+      const data = await res.json();
+      setLiveRanking(data.ranking || []);
+    } catch {
+      // keep whatever ranking we already have
+    }
+  }
+
+  async function refreshReports() {
+    try {
+      const res = await fetch("/api/reports");
+      if (!res.ok) return;
+      const data = await res.json();
+      setReports(data.reports || []);
+    } catch {
+      // keep whatever reports we already have
+    }
+  }
+
+  async function refreshThread(id: number) {
+    try {
+      const res = await fetch(`/api/posts/${id}`);
+      if (!res.ok) {
+        setView("feed");
+        return;
+      }
+      const data = await res.json();
+      setOpenPost(data.post);
+      setThreadComments(data.comments || []);
+    } catch {
+      // keep whatever thread state we already have
+    }
   }
 
   function refreshBadges() {
@@ -127,7 +177,36 @@ export default function PatioApp({
     refreshBadges();
     refreshBios();
     refreshFollowing();
+    refreshPosts();
+    refreshRanking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (isGuest) return;
+    fetch("/api/notifications")
+      .then((r) => r.json())
+      .then((data) => setNotifications(data.notifications || []))
+      .catch(() => {
+        // keep whatever notifications we already have
+      });
+  }, [isGuest]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    fetch("/api/reports")
+      .then((r) => (r.ok ? r.json() : { reports: [] }))
+      .then((data) => {
+        if (!cancelled) setReports(data.reports || []);
+      })
+      .catch(() => {
+        // keep whatever reports we already have
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -145,10 +224,8 @@ export default function PatioApp({
 
   useEffect(() => {
     const sharedId = Number(new URLSearchParams(window.location.search).get("post"));
-    if (sharedId && posts.some((p) => p.id === sharedId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setView("thread");
-      setOpenId(sharedId);
+    if (sharedId) {
+      openThread(sharedId);
       window.history.replaceState(null, "", window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -172,149 +249,17 @@ export default function PatioApp({
     return true;
   }
 
-  function votesFor(p: Post) {
-    return p.votes + (votes[p.id] || 0);
-  }
-
-  function likesFor(p: Post) {
-    return p.likes + (likes[p.id] ? 1 : 0);
-  }
-
-  function commentsAuthoredBy(targetAlias: string): number {
-    return posts.reduce((sum, p) => sum + p.comments.filter((c) => c.author === targetAlias).length, 0);
-  }
-
-  function karmaFor(targetAlias: string): number {
-    let total = 0;
-    for (const p of posts) {
-      if (p.author === targetAlias) total += votesFor(p) + likesFor(p);
-      for (const c of p.comments) {
-        if (c.author === targetAlias) total += c.likes + (cLikes[c.id] ? 1 : 0);
-      }
-    }
-    return total;
-  }
-
-  const prevVotesRef = useRef<Record<number, number>>({});
-  const prevLikesRef = useRef<Record<number, number>>({});
-  const prevCommentCountRef = useRef<Record<number, number>>({});
-  const prevCommentLikesRef = useRef<Record<number, number>>({});
-  const notifBaselineSetRef = useRef(false);
-  const nextNotifIdRef = useRef(1);
-
-  useEffect(() => {
-    if (isGuest) return;
-    const prevVotes = prevVotesRef.current;
-    const prevLikes = prevLikesRef.current;
-    const prevCommentCount = prevCommentCountRef.current;
-    const prevCommentLikes = prevCommentLikesRef.current;
-    const fresh: AppNotification[] = [];
-    const isBaseline = !notifBaselineSetRef.current;
-
-    function makeNotification(type: AppNotification["type"], postId: number, commentId: number | undefined, message: string) {
-      fresh.push({ id: nextNotifIdRef.current++, type, postId, commentId, message, time: "justo ahora", read: false });
-    }
-
-    for (const p of posts) {
-      const isMine = p.author === alias;
-      const curVotes = votesFor(p);
-      const curLikes = likesFor(p);
-      const curComments = p.comments.length;
-      const prevVoteCount = prevVotes[p.id] ?? curVotes;
-      const prevLikeCount = prevLikes[p.id] ?? curLikes;
-      const prevCCount = prevCommentCount[p.id] ?? curComments;
-
-      if (isMine && !isBaseline) {
-        if (curVotes > prevVoteCount) {
-          makeNotification("vote", p.id, undefined, `Tu hilo "${p.title}" recibió un voto nuevo.`);
-        }
-        if (curLikes > prevLikeCount) {
-          makeNotification("like", p.id, undefined, `A alguien le gustó tu hilo "${p.title}".`);
-        }
-        if (curComments > prevCCount) {
-          const added = p.comments.slice(Math.max(0, prevCCount)).filter((c) => c.author !== alias);
-          if (added.length === 1) {
-            makeNotification("comment", p.id, added[0].id, `Nuevo comentario en tu hilo "${p.title}".`);
-          } else if (added.length > 1) {
-            makeNotification("comment", p.id, undefined, `${added.length} comentarios nuevos en tu hilo "${p.title}".`);
-          }
-        }
-      }
-
-      prevVotes[p.id] = curVotes;
-      prevLikes[p.id] = curLikes;
-      prevCommentCount[p.id] = curComments;
-
-      for (const c of p.comments) {
-        const curCommentLikes = c.likes + (cLikes[c.id] ? 1 : 0);
-        const prevCommentLikeCount = prevCommentLikes[c.id] ?? curCommentLikes;
-        if (c.author === alias && !isBaseline && curCommentLikes > prevCommentLikeCount) {
-          makeNotification("commentLike", p.id, c.id, `A alguien le gustó tu comentario en "${p.title}".`);
-        }
-        prevCommentLikes[c.id] = curCommentLikes;
-      }
-    }
-
-    if (fresh.length) {
-      setNotifications((ns) => [...fresh.reverse(), ...ns].slice(0, 50));
-    }
-    notifBaselineSetRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, votes, likes, cLikes, alias, isGuest]);
-
-  function markAllNotificationsRead() {
-    setNotifications((ns) => (ns.every((n) => n.read) ? ns : ns.map((n) => ({ ...n, read: true }))));
-  }
-
-  function openNotification(n: AppNotification) {
-    setNotifications((ns) => ns.map((item) => (item.id === n.id ? { ...item, read: true } : item)));
-    openThread(n.postId);
-  }
-
   function categoryLabel(id: string): string {
     return categories.find((c) => c.id === id)?.name ?? id;
   }
 
-  function decoratePoll(p: Post): DecoratedPoll | undefined {
-    if (!p.poll) return undefined;
-    const totalVotes = p.poll.options.reduce((sum, o) => sum + o.votes, 0);
-    return {
-      options: p.poll.options.map((o) => ({ ...o, pct: totalVotes ? Math.round((o.votes / totalVotes) * 100) : 0 })),
-      totalVotes,
-      myVote: pollVotes[p.id] ?? null,
-    };
-  }
-
-  function decoratePost(p: Post): DecoratedPost {
-    return {
-      id: p.id,
-      cat: categoryLabel(p.cat),
-      author: p.author,
-      time: p.time,
-      title: p.title,
-      excerpt: p.excerpt,
-      body: p.body,
-      votes: votesFor(p),
-      commentCount: p.comments.length,
-      voteValue: votes[p.id] || 0,
-      likes: likesFor(p),
-      liked: !!likes[p.id],
-      pinned: pinnedIds.includes(p.id),
-      reported: reports.some((r) => r.kind === "post" && r.postId === p.id),
-      poll: decoratePoll(p),
-      isQuestion: !!p.isQuestion,
-      bestAnswerId: p.bestAnswerId ?? null,
-    };
-  }
-
-  const openPost = posts.find((p) => p.id === openId) || posts[0];
-  const chat = chats.find((c) => c.id === chatId) || chats[0];
-  const myAlias = anon ? MY_ANON_ALIAS : alias;
-  const postAsLabel = isGuest ? "Inicia sesión para publicar" : `Publicas como ${myAlias}`;
+  const myAlias = alias;
+  const postAsLabel = isGuest ? "Inicia sesión para publicar" : anon ? "Publicas de forma anónima" : `Publicas como ${myAlias}`;
   const myInitials = initials(alias);
 
   const feedPosts = useMemo(() => {
-    let list = cat === "all" ? posts.slice() : posts.filter((p) => p.cat === cat);
+    const activeLabel = cat === "all" ? null : categoryLabel(cat);
+    let list = activeLabel ? posts.filter((p) => p.cat === activeLabel) : posts.slice();
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -323,61 +268,43 @@ export default function PatioApp({
     }
     if (sort === "Recientes") list = list.slice().reverse();
     if (sort === "Populares") {
-      const engagement = (p: Post) => votesFor(p) + likesFor(p) + p.comments.length * 2;
+      const engagement = (p: DecoratedPost) => p.votes + p.likes + p.commentCount * 2;
       list = list.slice().sort((a, b) => engagement(b) - engagement(a));
     }
-    const pinned = list.filter((p) => pinnedIds.includes(p.id));
-    const rest = list.filter((p) => !pinnedIds.includes(p.id));
-    return [...pinned, ...rest].map(decoratePost);
+    const pinned = list.filter((p) => p.pinned);
+    const rest = list.filter((p) => !p.pinned);
+    return [...pinned, ...rest];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, cat, sort, search, votes, likes, pinnedIds, reports, pollVotes]);
-
-  const decoratedComments: DecoratedComment[] = (openPost.comments || [])
-    .map((c) => ({
-      id: c.id,
-      author: c.author,
-      time: c.time,
-      text: c.text,
-      likes: c.likes + (cLikes[c.id] ? 1 : 0),
-      liked: !!cLikes[c.id],
-      reported: reports.some((r) => r.kind === "comment" && r.commentId === c.id),
-      isBestAnswer: c.id === openPost.bestAnswerId,
-    }))
-    .sort((a, b) => Number(b.isBestAnswer) - Number(a.isBestAnswer));
+  }, [posts, cat, sort, search, categories]);
 
   const catCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of categories) {
-      counts[c.id] = c.id === "all" ? posts.length : posts.filter((p) => p.cat === c.id).length;
+      counts[c.id] = c.id === "all" ? posts.length : posts.filter((p) => p.cat === c.name).length;
     }
     return counts;
   }, [posts, categories]);
 
-  const liveRanking: RankingUser[] = useMemo(() => {
-    const list = RANKING.map((r) => ({ ...r, karma: r.karma + karmaFor(r.alias) }));
-    if (!isGuest && !RANKING.some((r) => r.alias === alias)) {
-      list.push({
-        alias,
-        meta: bios[alias] ? bios[alias]!.slice(0, 28) : "Recién llegado al rincón",
-        badge: badges[alias] || "Nuevo por aquí",
-        karma: karmaFor(alias),
-      });
-    }
-    return list.sort((a, b) => b.karma - a.karma);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, votes, likes, cLikes, alias, isGuest, badges, bios]);
-
-  const myRank = isGuest ? 0 : liveRanking.findIndex((r) => r.alias === alias) + 1;
-
-  const minePosts = posts.filter((p) => p.author === alias).map(decoratePost);
+  const myRank = isGuest ? 0 : profileStats.rank;
 
   const profileAlias = viewingAlias ?? alias;
   const isOwnProfile = !viewingAlias;
-  const profilePosts = viewingAlias ? posts.filter((p) => p.author === viewingAlias).map(decoratePost) : minePosts;
 
   useEffect(() => {
     if (view !== "profile" || !profileAlias) return;
     let cancelled = false;
+    Promise.all([
+      fetch(`/api/posts?author=${encodeURIComponent(profileAlias)}`).then((r) => r.json()),
+      fetch(`/api/profile?alias=${encodeURIComponent(profileAlias)}`).then((r) => (r.ok ? r.json() : { karma: 0, commentCount: 0, rank: 0 })),
+    ])
+      .then(([postsData, statsData]) => {
+        if (cancelled) return;
+        setProfilePosts(postsData.posts || []);
+        setProfileStats(statsData);
+      })
+      .catch(() => {
+        // keep whatever profile state we already have
+      });
     fetch(`/api/follow?alias=${encodeURIComponent(profileAlias)}`)
       .then((r) => r.json())
       .then((data) => {
@@ -418,39 +345,50 @@ export default function PatioApp({
     setView("profile");
   }
 
-  function vote(id: number, dir: 1 | -1) {
+  async function vote(id: number, dir: 1 | -1) {
     if (!requireAuth()) return;
-    setVotes((v) => ({ ...v, [id]: v[id] === dir ? 0 : dir }));
+    const res = await fetch(`/api/posts/${id}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dir }),
+    });
+    if (!res.ok) return;
+    await refreshPosts();
+    if (view === "thread" && openId === id) await refreshThread(id);
   }
-  function toggleLike(id: number) {
+
+  async function toggleLike(id: number) {
     if (!requireAuth()) return;
-    setLikes((l) => ({ ...l, [id]: !l[id] }));
+    const res = await fetch(`/api/posts/${id}/like`, { method: "POST" });
+    if (!res.ok) return;
+    await refreshPosts();
+    if (view === "thread" && openId === id) await refreshThread(id);
   }
-  function toggleCommentLike(id: number) {
+
+  async function toggleCommentLike(commentId: number) {
     if (!requireAuth()) return;
-    setCLikes((c) => ({ ...c, [id]: !c[id] }));
+    const res = await fetch(`/api/comments/${commentId}/like`, { method: "POST" });
+    if (!res.ok) return;
+    if (view === "thread" && openId != null) await refreshThread(openId);
   }
-  function votePoll(postId: number, optionId: number) {
+
+  async function votePoll(postId: number, optionId: number) {
     if (!requireAuth()) return;
-    const prevOptionId = pollVotes[postId];
-    if (prevOptionId === optionId) return;
-    setPosts((ps) =>
-      ps.map((p) => {
-        if (p.id !== postId || !p.poll) return p;
-        const options = p.poll.options.map((o) => {
-          if (o.id === optionId) return { ...o, votes: o.votes + 1 };
-          if (o.id === prevOptionId) return { ...o, votes: Math.max(0, o.votes - 1) };
-          return o;
-        });
-        return { ...p, poll: { options } };
-      })
-    );
-    setPollVotes((pv) => ({ ...pv, [postId]: optionId }));
+    const res = await fetch(`/api/posts/${postId}/poll-vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ optionId }),
+    });
+    if (!res.ok) return;
+    await refreshPosts();
+    if (view === "thread" && openId === postId) await refreshThread(postId);
   }
+
   function openThread(id: number) {
     setView("thread");
     setOpenId(id);
     setReply("");
+    refreshThread(id);
   }
 
   function pickCategory(id: string) {
@@ -472,55 +410,39 @@ export default function PatioApp({
     });
   }
 
-  function publish(pollOptions?: string[], isQuestion?: boolean): boolean {
+  async function publish(pollOptions?: string[], isQuestion?: boolean): Promise<boolean> {
     if (!requireAuth()) return false;
     if (isMuted) return false;
     const text = draft.trim();
     if (!text) return false;
     const targetCat = cat === "all" ? "Vida de campus" : cat;
-    const cleanOptions = (pollOptions ?? []).map((o) => o.trim()).filter(Boolean);
-    const poll = cleanOptions.length >= 2 ? { options: cleanOptions.map((optText, i) => ({ id: i + 1, text: optText, votes: 0 })) } : undefined;
-    setPosts((ps) => [
-      ...ps,
-      {
-        id: nextId,
-        cat: targetCat,
-        author: anon ? MY_ANON_ALIAS : alias,
-        time: "ahora mismo",
-        votes: 1,
-        likes: 0,
-        title: text.length > 70 ? text.slice(0, 70) + "…" : text,
-        excerpt: text,
-        body: text,
-        comments: [],
-        poll,
-        isQuestion: !!isQuestion,
-        bestAnswerId: null,
-      },
-    ]);
+    const res = await fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, cat: targetCat, pollOptions, isQuestion, anon }),
+    });
+    if (!res.ok) return false;
     setDraft("");
     setSort("Recientes");
-    setNextId((n) => n + 1);
+    await refreshPosts();
     return true;
   }
 
-  function sendReply() {
+  async function sendReply() {
     if (!requireAuth()) return;
     if (isMuted) return;
+    if (openId == null) return;
     const text = reply.trim();
     if (!text) return;
-    setPosts((ps) =>
-      ps.map((p) =>
-        p.id !== openPost.id
-          ? p
-          : {
-              ...p,
-              comments: [...p.comments, { id: nextId, author: anon ? MY_ANON_ALIAS : alias, time: "ahora mismo", text, likes: 0 }],
-            }
-      )
-    );
+    const res = await fetch(`/api/posts/${openId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, anon }),
+    });
+    if (!res.ok) return;
     setReply("");
-    setNextId((n) => n + 1);
+    await refreshThread(openId);
+    await refreshPosts();
   }
 
   async function saveAlias(next: string): Promise<string | undefined> {
@@ -553,64 +475,63 @@ export default function PatioApp({
     return undefined;
   }
 
-  function deletePost(id: number) {
-    setPosts((ps) => ps.filter((p) => p.id !== id));
-    setPinnedIds((ids) => ids.filter((i) => i !== id));
-    setReports((rs) => rs.filter((r) => r.postId !== id));
+  async function deletePost(id: number) {
+    const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    await refreshPosts();
+    if (isAdmin) await refreshReports();
     if (view === "thread" && openId === id) setView("feed");
   }
 
-  function deleteComment(postId: number, commentId: number) {
-    setPosts((ps) =>
-      ps.map((p) => (p.id !== postId ? p : { ...p, comments: p.comments.filter((c) => c.id !== commentId) }))
-    );
-    setReports((rs) => rs.filter((r) => r.commentId !== commentId));
+  async function deleteComment(postId: number, commentId: number) {
+    const res = await fetch(`/api/comments/${commentId}`, { method: "DELETE" });
+    if (!res.ok) return;
+    await refreshThread(postId);
+    await refreshPosts();
+    if (isAdmin) await refreshReports();
   }
 
-  function markBestAnswer(postId: number, commentId: number) {
-    setPosts((ps) =>
-      ps.map((p) => (p.id !== postId ? p : { ...p, bestAnswerId: p.bestAnswerId === commentId ? null : commentId }))
-    );
+  async function markBestAnswer(postId: number, commentId: number) {
+    const res = await fetch(`/api/posts/${postId}/best-answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commentId }),
+    });
+    if (!res.ok) return;
+    await refreshThread(postId);
   }
 
-  function togglePin(id: number) {
-    setPinnedIds((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]));
+  async function togglePin(id: number) {
+    const res = await fetch(`/api/posts/${id}/pin`, { method: "POST" });
+    if (!res.ok) return;
+    await refreshPosts();
+    if (view === "thread" && openId === id) await refreshThread(id);
   }
 
-  function reportPost(id: number) {
+  async function reportPost(id: number) {
     if (!requireAuth()) return;
-    const post = posts.find((p) => p.id === id);
-    if (!post || reports.some((r) => r.kind === "post" && r.postId === id)) return;
-    setReports((rs) => [
-      ...rs,
-      { id: nextReportId, kind: "post", postId: id, postTitle: post.title, author: post.author, snippet: post.excerpt, reportedAt: "ahora mismo" },
-    ]);
-    setNextReportId((n) => n + 1);
+    await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "post", postId: id }),
+    });
+    await refreshPosts();
+    if (view === "thread" && openId === id) await refreshThread(id);
   }
 
-  function reportComment(postId: number, commentId: number) {
+  async function reportComment(postId: number, commentId: number) {
     if (!requireAuth()) return;
-    const post = posts.find((p) => p.id === postId);
-    const comment = post?.comments.find((c) => c.id === commentId);
-    if (!post || !comment || reports.some((r) => r.kind === "comment" && r.commentId === commentId)) return;
-    setReports((rs) => [
-      ...rs,
-      {
-        id: nextReportId,
-        kind: "comment",
-        postId,
-        commentId,
-        postTitle: post.title,
-        author: comment.author,
-        snippet: comment.text,
-        reportedAt: "ahora mismo",
-      },
-    ]);
-    setNextReportId((n) => n + 1);
+    await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "comment", postId, commentId }),
+    });
+    await refreshThread(postId);
   }
 
-  function dismissReport(reportId: number) {
-    setReports((rs) => rs.filter((r) => r.id !== reportId));
+  async function dismissReport(reportId: number) {
+    await fetch(`/api/reports/${reportId}`, { method: "DELETE" });
+    await refreshReports();
   }
 
   function addCategory(name: string, emoji: string) {
@@ -628,7 +549,6 @@ export default function PatioApp({
 
   function deleteCategory(id: string) {
     setCategories((cs) => cs.filter((c) => c.id !== id));
-    setPosts((ps) => ps.map((p) => (p.cat === id ? { ...p, cat: "Vida de campus" } : p)));
     if (cat === id) setCat("all");
   }
 
@@ -651,6 +571,24 @@ export default function PatioApp({
     setChats((cs) => cs.map((c) => (c.id !== chatId ? c : { ...c, msgs: [...c.msgs, { me: true, text }], unread: false })));
     setDmDraft("");
   }
+
+  async function markAllNotificationsRead() {
+    try {
+      const res = await fetch("/api/notifications");
+      const data = await res.json();
+      setNotifications((data.notifications || []).map((n: AppNotification) => ({ ...n, read: true })));
+      fetch("/api/notifications", { method: "POST" }).catch(() => {});
+    } catch {
+      // keep whatever notifications we already have
+    }
+  }
+
+  function openNotification(n: AppNotification) {
+    setNotifications((ns) => ns.map((item) => (item.id === n.id ? { ...item, read: true } : item)));
+    openThread(n.postId);
+  }
+
+  const chat = chats.find((c) => c.id === chatId) || chats[0];
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
@@ -719,6 +657,7 @@ export default function PatioApp({
               onToggleAnon={() => setAnon((a) => !a)}
               onPublish={publish}
               feedTitle={search.trim() ? `Resultados para "${search.trim()}"` : cat === "all" ? "Lo que se está cocinando" : categoryLabel(cat)}
+              emptyMessage={search.trim() ? "No encontramos nada por aquí. Prueba con otra palabra." : "Todavía no hay nada por aquí. ¡Sé la primera persona en publicar!"}
               sort={sort}
               onSortChange={setSort}
               posts={feedPosts}
@@ -740,10 +679,10 @@ export default function PatioApp({
             />
           )}
 
-          {view === "thread" && (
+          {view === "thread" && openPost && (
             <ThreadView
-              post={decoratePost(openPost)}
-              comments={decoratedComments}
+              post={openPost}
+              comments={threadComments}
               reply={reply}
               onReplyChange={setReply}
               onSendReply={sendReply}
@@ -802,9 +741,9 @@ export default function PatioApp({
               following={followInfo?.following ?? 0}
               isFollowing={followInfo?.isFollowing ?? false}
               onToggleFollow={() => toggleFollow(profileAlias)}
-              karma={karmaFor(profileAlias)}
-              commentCount={commentsAuthoredBy(profileAlias)}
-              rank={isOwnProfile ? myRank : liveRanking.findIndex((r) => r.alias === profileAlias) + 1}
+              karma={profileStats.karma}
+              commentCount={profileStats.commentCount}
+              rank={isOwnProfile ? myRank : profileStats.rank}
             />
           )}
 
@@ -877,23 +816,25 @@ export default function PatioApp({
         </button>
       )}
 
-      <ChatWidget
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        chats={chats}
-        activeChatId={chat.id}
-        onSelectChat={setChatId}
-        dmDraft={dmDraft}
-        onDmDraftChange={setDmDraft}
-        onDmKey={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            pushDm();
-          }
-        }}
-        onSendDm={pushDm}
-        badges={badges}
-      />
+      {chat && (
+        <ChatWidget
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          chats={chats}
+          activeChatId={chat.id}
+          onSelectChat={setChatId}
+          dmDraft={dmDraft}
+          onDmDraftChange={setDmDraft}
+          onDmKey={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              pushDm();
+            }
+          }}
+          onSendDm={pushDm}
+          badges={badges}
+        />
+      )}
     </div>
   );
 }

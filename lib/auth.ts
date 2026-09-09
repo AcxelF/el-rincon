@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
-import { db, dbReady } from "./db";
+import { run, getOne, getAll } from "./db";
 
 export const SESSION_COOKIE_NAME = "patio_session";
 const SESSION_DAYS = 30;
@@ -17,23 +17,6 @@ export interface AuthUser {
   mutedUntil: number | null;
   badge: string | null;
   bio: string | null;
-}
-
-async function run(sql: string, args: unknown[] = []) {
-  await dbReady;
-  return db.execute({ sql, args: args as (string | number | null)[] });
-}
-
-async function getOne<T>(sql: string, args: unknown[] = []): Promise<T | undefined> {
-  await dbReady;
-  const result = await db.execute({ sql, args: args as (string | number | null)[] });
-  return result.rows[0] as unknown as T | undefined;
-}
-
-async function getAll<T>(sql: string, args: unknown[] = []): Promise<T[]> {
-  await dbReady;
-  const result = await db.execute({ sql, args: args as (string | number | null)[] });
-  return result.rows as unknown as T[];
 }
 
 export function normalizeAlias(input: string): string {

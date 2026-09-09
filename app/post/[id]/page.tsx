@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { INITIAL_POSTS } from "@/lib/mock-data";
+import { getPost } from "@/lib/posts";
 import RedirectToThread from "./RedirectToThread";
 
 type Params = { id: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
-  const post = INITIAL_POSTS.find((p) => p.id === Number(id));
+  const post = await getPost(Number(id), null);
 
   if (!post) {
     return { title: "El Rincón — Científica del Sur" };
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function SharedPostPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
-  const post = INITIAL_POSTS.find((p) => p.id === Number(id));
+  const post = await getPost(Number(id), null);
 
   return (
     <>
