@@ -78,6 +78,7 @@ export default function ChatWidget({
 
   return (
     <div
+      className="chat-panel"
       style={{
         position: "fixed",
         bottom: "var(--floating-offset)",

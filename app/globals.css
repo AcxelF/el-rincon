@@ -429,6 +429,17 @@ textarea.input {
   }
 }
 
+/* — chat panel: grows from the message button that opened it — */
+.chat-panel {
+  transform-origin: bottom right;
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+}
+
 /* — auth screen input: chunky bordered "stamp" field, adapted from a Uiverse.io
    neobrutalist snippet to our rounded navy theme instead of its original
    sharp-corner black/white look — */
@@ -507,7 +518,8 @@ textarea.input {
   .hover-tooltip,
   .attach-menu,
   .auth-input,
-  .auth-mode-slide {
+  .auth-mode-slide,
+  .chat-panel {
     transition: none;
   }
   .notify-dot {
