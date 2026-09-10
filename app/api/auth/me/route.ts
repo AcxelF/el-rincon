@@ -10,6 +10,7 @@ import {
   updateUserBio,
 } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { renameAuthorEverywhere } from "@/lib/posts";
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request);
@@ -48,6 +49,7 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
       }
       await updateUserAlias(user.id, alias);
+      await renameAuthorEverywhere(user.id, alias);
     }
     nextAlias = alias;
   }

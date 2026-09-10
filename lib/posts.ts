@@ -222,6 +222,12 @@ export async function createPost(opts: {
   return postId;
 }
 
+/** Keeps this user's already-published (non-anonymous) posts and comments showing their current alias after a rename. */
+export async function renameAuthorEverywhere(userId: string, alias: string): Promise<void> {
+  await run("UPDATE posts SET author = :alias WHERE author_user_id = :userId AND is_anon = 0", { alias, userId });
+  await run("UPDATE comments SET author = :alias WHERE author_user_id = :userId AND is_anon = 0", { alias, userId });
+}
+
 export async function addComment(postId: number, opts: { userId: string; alias: string; anon: boolean; text: string }): Promise<number> {
   const author = opts.anon ? randomAnonLabel() : opts.alias;
   const result = await run(
