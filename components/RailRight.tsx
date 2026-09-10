@@ -40,13 +40,13 @@ export default function RailRight({
         {topPeople.map((u) => (
           <div
             key={u.alias}
-            className="alias-link"
+            className="alias-link-row"
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}
             onClick={() => onViewProfile(u.alias)}
           >
             <div style={avatarForAlias(u.alias, 34)}>{initials(u.alias)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{u.alias}</div>
+              <div className="alias-link-text" style={{ fontSize: 13.5, fontWeight: 600 }}>{u.alias}</div>
               <div style={{ fontSize: 11.5, color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>{u.meta}</div>
             </div>
             <span className="tag tag-neutral">🔥 {formatKarma(u.karma)}</span>

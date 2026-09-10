@@ -348,6 +348,17 @@ textarea.input {
   }
 }
 
+/* — clickable row containing more than just the alias (avatar, meta, karma…):
+   only the alias text itself underlines, not the whole row — */
+.alias-link-row {
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .alias-link-row:hover .alias-link-text {
+    text-decoration: underline;
+  }
+}
+
 /* — list items entering (new post, new comment, new chat message) — */
 .list-item-enter {
   transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);

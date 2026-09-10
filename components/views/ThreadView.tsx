@@ -174,6 +174,7 @@ export default function ThreadView({
                 <span style={{ flex: 1 }} />
               </>
             )}
+            <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>{reply.length}/1000</span>
             <button className="btn btn-primary" onClick={onSendReply} disabled={isMuted}>
               Comentar
             </button>

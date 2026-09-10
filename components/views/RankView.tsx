@@ -20,10 +20,10 @@ export default function RankView({ ranking, onViewProfile }: { ranking: RankingU
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
         {podium.map((p, i) => (
-          <div key={p.alias} className="alias-link" style={podiumCardStyle(i)} onClick={() => onViewProfile(p.alias)}>
+          <div key={p.alias} className="alias-link-row" style={podiumCardStyle(i)} onClick={() => onViewProfile(p.alias)}>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 30, lineHeight: 1 }}>{MEDALS[i]}</div>
             <div style={avatarForAlias(p.alias, 52)}>{initials(p.alias)}</div>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, lineHeight: 1.15 }}>{p.alias}</div>
+            <div className="alias-link-text" style={{ fontFamily: "var(--font-heading)", fontSize: 18, lineHeight: 1.15 }}>{p.alias}</div>
             <div style={{ fontSize: 12.5, opacity: 0.75 }}>{p.meta}</div>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 22 }}>{formatKarma(p.karma)}</div>
           </div>
@@ -34,7 +34,7 @@ export default function RankView({ ranking, onViewProfile }: { ranking: RankingU
         {ranking.map((r, i) => (
           <div
             key={r.alias}
-            className="alias-link"
+            className="alias-link-row"
             style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--color-divider)" }}
             onClick={() => onViewProfile(r.alias)}
           >
@@ -43,7 +43,7 @@ export default function RankView({ ranking, onViewProfile }: { ranking: RankingU
             </span>
             <div style={avatarForAlias(r.alias, 34)}>{initials(r.alias)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 600 }}>{r.alias}</div>
+              <div className="alias-link-text" style={{ fontSize: 14.5, fontWeight: 600 }}>{r.alias}</div>
               <div style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>{r.meta}</div>
             </div>
             <span className="tag tag-accent-2">{r.badge}</span>

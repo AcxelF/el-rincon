@@ -31,7 +31,7 @@ function legacyCopy(text: string): boolean {
 
 async function sharePost(post: DecoratedPost): Promise<"copied" | "failed"> {
   const link = `${window.location.origin}/post/${post.id}`;
-  const text = `"${post.title}"\n${post.excerpt}\n\n— ${post.author} en El Rincón · ${link}`;
+  const text = `Publicación: "${link}"`;
   try {
     await navigator.clipboard.writeText(text);
     return "copied";
@@ -298,6 +298,7 @@ export default function FeedView({
                 ) : (
                   <AnonToggleButton anon={anon} alias={postAsLabel.replace(/^Publicas como /, "")} onClick={onToggleAnon} action="Publicar" />
                 )}
+                <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>{draft.length}/2000</span>
                 <button className="btn btn-primary" onClick={handlePublish} disabled={isMuted || pollBlocking}>
                   Publicar
                 </button>
@@ -333,7 +334,7 @@ export default function FeedView({
           {matchingUsers.map((u) => (
             <div
               key={u.alias}
-              className="alias-link"
+              className="alias-link-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -346,7 +347,7 @@ export default function FeedView({
               onClick={() => onViewProfile(u.alias)}
             >
               <div style={avatarForAlias(u.alias, 34)}>{initials(u.alias)}</div>
-              <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{u.alias}</div>
+              <div className="alias-link-text" style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{u.alias}</div>
               <Badge label={u.badge ?? undefined} />
             </div>
           ))}

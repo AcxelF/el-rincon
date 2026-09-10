@@ -279,19 +279,24 @@ export default function ChatWidget({
             <div ref={msgsEndRef} />
           </div>
 
-          <div style={{ display: "flex", gap: 8, padding: "10px 12px", borderTop: "1px solid var(--color-divider)" }}>
-            <input
-              className="input"
-              placeholder="Escribe algo…"
-              style={{ minHeight: 38, paddingLeft: 14, background: "var(--color-surface)" }}
-              value={dmDraft}
-              onChange={(e) => onDmDraftChange(e.target.value)}
-              onKeyDown={onDmKey}
-              maxLength={1000}
-            />
-            <button className="btn btn-primary" style={{ minHeight: 38 }} onClick={onSendDm}>
-              Enviar
-            </button>
+          <div style={{ padding: "10px 12px", borderTop: "1px solid var(--color-divider)" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                className="input"
+                placeholder="Escribe algo…"
+                style={{ minHeight: 38, paddingLeft: 14, background: "var(--color-surface)" }}
+                value={dmDraft}
+                onChange={(e) => onDmDraftChange(e.target.value)}
+                onKeyDown={onDmKey}
+                maxLength={1000}
+              />
+              <button className="btn btn-primary" style={{ minHeight: 38 }} onClick={onSendDm}>
+                Enviar
+              </button>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 10.5, marginTop: 4, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+              {dmDraft.length}/1000
+            </div>
           </div>
         </>
       )}
