@@ -94,6 +94,8 @@ export default function AuthScreen({
         <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>Nombre de usuario</label>
         <input
           className="input auth-input"
+          type="text"
+          name="username"
           placeholder="Nombre de usuario"
           value={alias}
           onChange={(e) => setAlias(e.target.value)}
