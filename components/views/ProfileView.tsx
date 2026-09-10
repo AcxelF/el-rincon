@@ -30,6 +30,7 @@ export default function ProfileView({
   karma,
   commentCount,
   rank,
+  memberSince,
 }: {
   mine: DecoratedPost[];
   onOpenPost: (id: number) => void;
@@ -53,6 +54,7 @@ export default function ProfileView({
   karma: number;
   commentCount: number;
   rank: number;
+  memberSince: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [draftAlias, setDraftAlias] = useState(alias);
@@ -155,6 +157,7 @@ export default function ProfileView({
           )}
           <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-accent-900) 70%, transparent)" }}>
             <strong>{followers}</strong> {followers === 1 ? "seguidor" : "seguidores"} · <strong>{following}</strong> siguiendo
+            {memberSince && <> · Miembro desde {memberSince}</>}
           </div>
           {editingBio ? (
             <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6, maxWidth: 420 }}>

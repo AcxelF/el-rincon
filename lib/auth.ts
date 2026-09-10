@@ -253,6 +253,11 @@ export async function getFollowingAliases(userId: string): Promise<string[]> {
   return rows.map((r) => r.alias);
 }
 
+export async function getUserCreatedAt(alias: string): Promise<string | undefined> {
+  const row = await getOne<{ createdAt: string }>("SELECT created_at as createdAt FROM users WHERE alias = ? COLLATE NOCASE", [alias]);
+  return row?.createdAt;
+}
+
 export async function getBioMap(): Promise<Record<string, string>> {
   const rows = await getAll<{ alias: string; bio: string }>("SELECT alias, bio FROM users WHERE bio IS NOT NULL AND bio != ''");
   const map: Record<string, string> = {};

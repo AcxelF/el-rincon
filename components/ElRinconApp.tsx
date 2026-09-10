@@ -23,6 +23,7 @@ interface ProfileStats {
   karma: number;
   commentCount: number;
   rank: number;
+  memberSince: string | null;
 }
 
 export default function ElRinconApp({
@@ -71,7 +72,7 @@ export default function ElRinconApp({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [profilePosts, setProfilePosts] = useState<DecoratedPost[]>([]);
-  const [profileStats, setProfileStats] = useState<ProfileStats>({ karma: 0, commentCount: 0, rank: 0 });
+  const [profileStats, setProfileStats] = useState<ProfileStats>({ karma: 0, commentCount: 0, rank: 0, memberSince: null });
 
   function pushToast(message: string) {
     const id = Date.now() + Math.random();
@@ -295,7 +296,7 @@ export default function ElRinconApp({
     let cancelled = false;
     Promise.all([
       fetch(`/api/posts?author=${encodeURIComponent(profileAlias)}`).then((r) => r.json()),
-      fetch(`/api/profile?alias=${encodeURIComponent(profileAlias)}`).then((r) => (r.ok ? r.json() : { karma: 0, commentCount: 0, rank: 0 })),
+      fetch(`/api/profile?alias=${encodeURIComponent(profileAlias)}`).then((r) => (r.ok ? r.json() : { karma: 0, commentCount: 0, rank: 0, memberSince: null })),
     ])
       .then(([postsData, statsData]) => {
         if (cancelled) return;
@@ -744,6 +745,7 @@ export default function ElRinconApp({
               karma={profileStats.karma}
               commentCount={profileStats.commentCount}
               rank={isOwnProfile ? myRank : profileStats.rank}
+              memberSince={profileStats.memberSince}
             />
           )}
 
