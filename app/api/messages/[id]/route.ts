@@ -33,6 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return NextResponse.json({ error: "El mensaje no puede estar vacío." }, { status: 400 });
+  if (text.length > 1000) return NextResponse.json({ error: "El mensaje no puede superar los 1000 caracteres." }, { status: 400 });
 
   await sendMessage(conversationId, user.id, text);
   return NextResponse.json({ messages: await listMessages(conversationId, user.id) });

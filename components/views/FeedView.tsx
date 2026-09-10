@@ -167,6 +167,7 @@ export default function FeedView({
               value={draft}
               onChange={(e) => onDraftChange(e.target.value)}
               disabled={isMuted}
+              maxLength={2000}
             />
 
             {pollEnabled && (

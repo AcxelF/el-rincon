@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return NextResponse.json({ error: "El texto no puede estar vacío." }, { status: 400 });
+  if (text.length > 2000) return NextResponse.json({ error: "El texto no puede superar los 2000 caracteres." }, { status: 400 });
 
   const requestedCat = typeof body?.cat === "string" ? body.cat : "";
   const cat = VALID_CATEGORY_IDS.has(requestedCat) ? requestedCat : "Vida de campus";

@@ -15,6 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return NextResponse.json({ error: "El comentario no puede estar vacío." }, { status: 400 });
+  if (text.length > 1000) return NextResponse.json({ error: "El comentario no puede superar los 1000 caracteres." }, { status: 400 });
 
   await addComment(Number(id), { userId: user.id, alias: user.alias, anon: !!body?.anon, text });
   const post = await getPost(Number(id), user.id);

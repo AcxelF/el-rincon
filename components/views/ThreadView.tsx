@@ -163,6 +163,7 @@ export default function ThreadView({
             value={reply}
             onChange={(e) => onReplyChange(e.target.value)}
             disabled={isMuted}
+            maxLength={1000}
           />
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {isGuest ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { ArrowLeft, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import type { Chat, ChatMessage } from "@/lib/types";
 import { avatarForAlias, bubbleRowStyle, bubbleStyle, chatDotStyle, initials } from "@/lib/style-helpers";
 import Badge from "@/components/Badge";
@@ -90,6 +90,7 @@ export default function ChatWidget({
         flexDirection: "column",
         borderRadius: "var(--radius-lg)",
         background: "var(--color-neutral-100)",
+        border: "1px solid var(--color-divider)",
         boxShadow: "var(--shadow-lg)",
         overflow: "hidden",
         zIndex: 50,
@@ -105,7 +106,18 @@ export default function ChatWidget({
           background: "var(--color-surface)",
         }}
       >
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1 }}>Mensajes</span>
+        {searchOpen && (
+          <button
+            className="btn btn-ghost"
+            style={{ minHeight: 28, width: 28, padding: 0, display: "grid", placeItems: "center" }}
+            onClick={() => setSearchOpen(false)}
+            aria-label="Volver a mensajes"
+            title="Volver"
+          >
+            <ArrowLeft size={16} />
+          </button>
+        )}
+        <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1 }}>{searchOpen ? "Nueva conversación" : "Mensajes"}</span>
         {!searchOpen && (
           <button
             className="btn btn-ghost"
@@ -260,6 +272,7 @@ export default function ChatWidget({
               value={dmDraft}
               onChange={(e) => onDmDraftChange(e.target.value)}
               onKeyDown={onDmKey}
+              maxLength={1000}
             />
             <button className="btn btn-primary" style={{ minHeight: 38 }} onClick={onSendDm}>
               Enviar
