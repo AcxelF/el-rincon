@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { addComment, getPost, listComments } from "@/lib/posts";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   if (user.isMuted) return NextResponse.json({ error: "Estás silenciado y no puedes comentar." }, { status: 403 });
+
+  const allowed = await checkRateLimit(`create-comment:${user.id}`, 15, 5 * 60 * 1000);
+  if (!allowed) return NextResponse.json({ error: "Estás comentando demasiado rápido. Espera un momento." }, { status: 429 });
 
   const { id } = await params;
   const body = await request.json().catch(() => null);

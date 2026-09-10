@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, findUserByAlias, normalizeAlias, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS, verifyPassword } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const allowed = await checkRateLimit(`login:${getClientIp(request)}`, 10, 15 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Demasiados intentos. Espera unos minutos y vuelve a intentar." }, { status: 429 });
+  }
+
   const body = await request.json().catch(() => null);
   const alias = normalizeAlias(typeof body?.alias === "string" ? body.alias : "");
   const password = typeof body?.password === "string" ? body.password : "";

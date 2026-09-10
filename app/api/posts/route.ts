@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByAlias, getUserFromRequest, normalizeAlias } from "@/lib/auth";
 import { createPost, listPosts, listPostsByAuthor } from "@/lib/posts";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { CATEGORIES } from "@/lib/mock-data";
+
+const VALID_CATEGORY_IDS = new Set(CATEGORIES.filter((c) => c.id !== "all").map((c) => c.id));
 
 export async function GET(request: NextRequest) {
   const viewer = await getUserFromRequest(request);
@@ -21,11 +25,15 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   if (user.isMuted) return NextResponse.json({ error: "Estás silenciado y no puedes publicar." }, { status: 403 });
 
+  const allowed = await checkRateLimit(`create-post:${user.id}`, 5, 5 * 60 * 1000);
+  if (!allowed) return NextResponse.json({ error: "Estás publicando demasiado rápido. Espera un momento." }, { status: 429 });
+
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return NextResponse.json({ error: "El texto no puede estar vacío." }, { status: 400 });
 
-  const cat = typeof body?.cat === "string" && body.cat ? body.cat : "Vida de campus";
+  const requestedCat = typeof body?.cat === "string" ? body.cat : "";
+  const cat = VALID_CATEGORY_IDS.has(requestedCat) ? requestedCat : "Vida de campus";
   const anon = !!body?.anon;
   const isQuestion = !!body?.isQuestion;
   const pollOptions = Array.isArray(body?.pollOptions) ? body.pollOptions.filter((o: unknown) => typeof o === "string") : undefined;

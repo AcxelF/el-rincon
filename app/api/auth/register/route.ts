@@ -9,8 +9,14 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
 } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const allowed = await checkRateLimit(`register:${getClientIp(request)}`, 5, 60 * 60 * 1000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Demasiadas cuentas creadas desde aquí. Intenta de nuevo más tarde." }, { status: 429 });
+  }
+
   const body = await request.json().catch(() => null);
   const alias = normalizeAlias(typeof body?.alias === "string" ? body.alias : "");
   const password = typeof body?.password === "string" ? body.password : "";
