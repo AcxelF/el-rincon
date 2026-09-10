@@ -49,7 +49,7 @@ export default function AuthGate() {
   if (status === "guest") {
     return (
       <>
-        <PatioApp initialAlias="" isAdmin={false} isMuted={false} isGuest onRequireAuth={() => setPromptAuth(true)} onLogout={() => {}} />
+        <PatioApp key="guest" initialAlias="" isAdmin={false} isMuted={false} isGuest onRequireAuth={() => setPromptAuth(true)} onLogout={() => {}} />
         {promptAuth && <AuthScreen onAuthed={handleAuthed} onClose={() => setPromptAuth(false)} />}
       </>
     );
@@ -57,6 +57,7 @@ export default function AuthGate() {
 
   return (
     <PatioApp
+      key={`authed-${alias}`}
       initialAlias={alias}
       isAdmin={isAdmin}
       isMuted={isMuted}
