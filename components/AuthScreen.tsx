@@ -12,7 +12,7 @@ export default function AuthScreen({
   onAuthed: (user: { alias: string; isAdmin: boolean; isMuted: boolean }) => void;
   onClose?: () => void;
 }) {
-  const [mode, setMode] = useState<Mode>("register");
+  const [mode, setMode] = useState<Mode>("login");
   const [alias, setAlias] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -41,49 +41,27 @@ export default function AuthScreen({
     }
   }
 
-  const modeSwitch = (
-    <div style={{ display: "flex", gap: 6, padding: 4, borderRadius: 999, background: "var(--color-surface)" }}>
+  const switchLink = (
+    <div style={{ textAlign: "center", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+      {mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
       <button
         type="button"
         onClick={() => {
-          setMode("register");
+          setMode(mode === "login" ? "register" : "login");
           setError("");
         }}
         style={{
-          flex: 1,
-          padding: "8px 0",
-          borderRadius: 999,
+          background: "none",
           border: 0,
-          cursor: "pointer",
+          padding: 0,
           font: "inherit",
           fontSize: 13,
-          fontWeight: 600,
-          background: mode === "register" ? "var(--color-accent)" : "transparent",
-          color: mode === "register" ? "var(--color-neutral-100)" : "var(--color-text)",
-        }}
-      >
-        Crear cuenta
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          setMode("login");
-          setError("");
-        }}
-        style={{
-          flex: 1,
-          padding: "8px 0",
-          borderRadius: 999,
-          border: 0,
+          fontWeight: 700,
+          color: "var(--color-accent-700)",
           cursor: "pointer",
-          font: "inherit",
-          fontSize: 13,
-          fontWeight: 600,
-          background: mode === "login" ? "var(--color-accent)" : "transparent",
-          color: mode === "login" ? "var(--color-neutral-100)" : "var(--color-text)",
         }}
       >
-        Iniciar sesión
+        {mode === "login" ? "Crear cuenta" : "Iniciar sesión"}
       </button>
     </div>
   );
@@ -190,8 +168,8 @@ export default function AuthScreen({
                 {mode === "register" ? "Solo necesitas un nombre de usuario y una contraseña." : "Entra con tu nombre de usuario."}
               </div>
             </div>
-            {modeSwitch}
             {form}
+            {switchLink}
             {footnote}
           </div>
         </div>
@@ -269,8 +247,8 @@ export default function AuthScreen({
               Necesitas una cuenta para interactuar.
             </div>
           </div>
-          {modeSwitch}
           {form}
+          {switchLink}
           {footnote}
         </div>
       </div>
