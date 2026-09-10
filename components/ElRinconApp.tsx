@@ -818,25 +818,23 @@ export default function ElRinconApp({
         </button>
       )}
 
-      {chat && (
-        <ChatWidget
-          open={chatOpen}
-          onClose={() => setChatOpen(false)}
-          chats={chats}
-          activeChatId={chat.id}
-          onSelectChat={setChatId}
-          dmDraft={dmDraft}
-          onDmDraftChange={setDmDraft}
-          onDmKey={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              pushDm();
-            }
-          }}
-          onSendDm={pushDm}
-          badges={badges}
-        />
-      )}
+      <ChatWidget
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        chats={chats}
+        activeChatId={chat?.id ?? null}
+        onSelectChat={setChatId}
+        dmDraft={dmDraft}
+        onDmDraftChange={setDmDraft}
+        onDmKey={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            pushDm();
+          }
+        }}
+        onSendDm={pushDm}
+        badges={badges}
+      />
     </div>
   );
 }
