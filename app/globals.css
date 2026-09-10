@@ -478,6 +478,23 @@ textarea.input {
   }
 }
 
+/* — auth screen: slide+fade when switching between login and register — */
+.auth-mode-slide {
+  transition: transform 220ms var(--ease-out), opacity 220ms var(--ease-out);
+}
+.auth-mode-slide[data-dir="right"] {
+  @starting-style {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+.auth-mode-slide[data-dir="left"] {
+  @starting-style {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .input,
@@ -489,7 +506,8 @@ textarea.input {
   .heart-pop,
   .hover-tooltip,
   .attach-menu,
-  .auth-input {
+  .auth-input,
+  .auth-mode-slide {
     transition: none;
   }
   .notify-dot {

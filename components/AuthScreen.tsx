@@ -13,10 +13,17 @@ export default function AuthScreen({
   onClose?: () => void;
 }) {
   const [mode, setMode] = useState<Mode>("login");
+  const [direction, setDirection] = useState<"left" | "right">("right");
   const [alias, setAlias] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function switchMode(next: Mode) {
+    setDirection(next === "register" ? "right" : "left");
+    setMode(next);
+    setError("");
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,10 +53,7 @@ export default function AuthScreen({
       {mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
       <button
         type="button"
-        onClick={() => {
-          setMode(mode === "login" ? "register" : "login");
-          setError("");
-        }}
+        onClick={() => switchMode(mode === "login" ? "register" : "login")}
         style={{
           background: "none",
           border: 0,
@@ -159,17 +163,19 @@ export default function AuthScreen({
         </div>
 
         <div style={{ display: "grid", placeItems: "center", padding: "40px 24px", background: "var(--color-bg)" }}>
-          <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 18 }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, color: "var(--color-text)" }}>
-                {mode === "register" ? "Crea tu cuenta" : "Inicia sesión"}
+          <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 18, overflow: "hidden" }}>
+            <div key={mode} data-dir={direction} className="auth-mode-slide" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, color: "var(--color-text)" }}>
+                  {mode === "register" ? "Crea tu cuenta" : "Inicia sesión"}
+                </div>
+                <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 4 }}>
+                  {mode === "register" ? "Solo necesitas un nombre de usuario y una contraseña." : "Entra con tu nombre de usuario."}
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 4 }}>
-                {mode === "register" ? "Solo necesitas un nombre de usuario y una contraseña." : "Entra con tu nombre de usuario."}
-              </div>
+              {form}
+              {switchLink}
             </div>
-            {form}
-            {switchLink}
             {footnote}
           </div>
         </div>
@@ -240,15 +246,17 @@ export default function AuthScreen({
           />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 18, padding: "20px 30px 30px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18, padding: "20px 30px 30px", overflow: "hidden" }}>
           <div style={{ maxWidth: 220 }}>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, color: "var(--color-text)" }}>El Rincón</div>
             <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 2 }}>
               Necesitas una cuenta para interactuar.
             </div>
           </div>
-          {form}
-          {switchLink}
+          <div key={mode} data-dir={direction} className="auth-mode-slide" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {form}
+            {switchLink}
+          </div>
           {footnote}
         </div>
       </div>
