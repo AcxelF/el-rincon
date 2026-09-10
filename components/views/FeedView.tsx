@@ -160,7 +160,7 @@ export default function FeedView({
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
             <textarea
               className="input"
-              placeholder={isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "Suelta el chisme, arma una quedada, di lo que sea…"}
+              placeholder={isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "¿Qué quieres compartir?"}
               style={{ background: "var(--color-neutral-100)", minHeight: 74, fontSize: 15 }}
               value={draft}
               onChange={(e) => onDraftChange(e.target.value)}
