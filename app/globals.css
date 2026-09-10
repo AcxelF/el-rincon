@@ -429,7 +429,7 @@ textarea.input {
   }
 }
 
-/* — chat panel: grows from the message button that opened it — */
+/* — chat panel: grows from / shrinks back into the message button — */
 .chat-panel {
   transform-origin: bottom right;
   transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
@@ -438,6 +438,12 @@ textarea.input {
     opacity: 0;
     transform: scale(0.92) translateY(10px);
   }
+}
+
+.chat-panel[data-state="closing"] {
+  opacity: 0;
+  transform: scale(0.92) translateY(10px);
+  pointer-events: none;
 }
 
 /* — auth screen input: chunky bordered "stamp" field, adapted from a Uiverse.io

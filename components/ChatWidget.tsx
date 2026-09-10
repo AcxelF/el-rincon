@@ -37,6 +37,19 @@ export default function ChatWidget({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ alias: string; badge: string | null }[]>([]);
 
+  const [rendered, setRendered] = useState(open);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setRendered(true);
+  }
+
+  useEffect(() => {
+    if (open) return;
+    const timeout = setTimeout(() => setRendered(false), 220);
+    return () => clearTimeout(timeout);
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     msgsEndRef.current?.scrollIntoView({ block: "end" });
@@ -74,11 +87,12 @@ export default function ChatWidget({
     onStartChat(alias);
   }
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   return (
     <div
       className="chat-panel"
+      data-state={open ? "open" : "closing"}
       style={{
         position: "fixed",
         bottom: "var(--floating-offset)",
