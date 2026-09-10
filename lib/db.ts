@@ -118,6 +118,21 @@ const SCHEMA_STATEMENTS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     read INTEGER NOT NULL DEFAULT 0
   )`,
+  `CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_a_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_b_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_a_id, user_b_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    read INTEGER NOT NULL DEFAULT 0
+  )`,
   `CREATE TABLE IF NOT EXISTS rate_limits (
     key TEXT NOT NULL,
     window_start INTEGER NOT NULL,

@@ -1,4 +1,4 @@
-import { Category, Chat } from "./types";
+import { Category } from "./types";
 
 export const CATEGORIES: Category[] = [
   { id: "all", name: "Todo el rincón", emoji: "🌀" },
@@ -54,8 +54,6 @@ export const CATEGORIES: Category[] = [
   { id: "PFPSI", name: "Psicología", emoji: "🧠", group: "carrera" },
   { id: "PFTRA", name: "Traducción e Interpretación", emoji: "🗣️", group: "carrera" },
 ];
-
-export const INITIAL_CHATS: Chat[] = [];
 
 export function formatKarma(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;

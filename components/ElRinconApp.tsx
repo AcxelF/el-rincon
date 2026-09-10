@@ -12,7 +12,7 @@ import ProfileView from "@/components/views/ProfileView";
 import AdminView from "@/components/views/AdminView";
 import ToastStack, { type ToastItem } from "@/components/ToastStack";
 import BottomNav from "@/components/BottomNav";
-import { CATEGORIES, INITIAL_CHATS } from "@/lib/mock-data";
+import { CATEGORIES } from "@/lib/mock-data";
 import { initials } from "@/lib/style-helpers";
 import type { AppNotification, Category, Chat, DecoratedPost, RankingUser, Report, SortMode, View } from "@/lib/types";
 
@@ -53,14 +53,14 @@ export default function ElRinconApp({
   const [reply, setReply] = useState("");
   const [dmDraft, setDmDraft] = useState("");
   const [openId, setOpenId] = useState<number | null>(null);
-  const [chatId, setChatId] = useState(1);
+  const [chatId, setChatId] = useState<number | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [posts, setPosts] = useState<DecoratedPost[]>([]);
   const [openPost, setOpenPost] = useState<DecoratedPost | null>(null);
   const [threadComments, setThreadComments] = useState<import("@/lib/types").DecoratedComment[]>([]);
   const [liveRanking, setLiveRanking] = useState<RankingUser[]>([]);
-  const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
-  const [nextChatId, setNextChatId] = useState(100);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const activeChatId = chatId ?? chats[0]?.id ?? null;
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
   const [reports, setReports] = useState<Report[]>([]);
   const [badges, setBadges] = useState<Record<string, string>>({});
@@ -208,6 +208,20 @@ export default function ElRinconApp({
       cancelled = true;
     };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isGuest) return;
+    refreshConversations();
+    const interval = setInterval(refreshConversations, 8000);
+    return () => clearInterval(interval);
+  }, [isGuest]);
+
+  useEffect(() => {
+    if (!chatOpen || activeChatId == null) return;
+    refreshMessages(activeChatId);
+    const interval = setInterval(() => refreshMessages(activeChatId), 4000);
+    return () => clearInterval(interval);
+  }, [chatOpen, activeChatId]);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -553,24 +567,80 @@ export default function ElRinconApp({
     if (cat === id) setCat("all");
   }
 
-  function openChatWithAlias(targetAlias: string) {
-    const existing = chats.find((c) => c.alias === targetAlias);
-    if (existing) {
-      setChatId(existing.id);
-    } else {
-      const newChat: Chat = { id: nextChatId, alias: targetAlias, status: "usuario registrado", unread: false, msgs: [] };
-      setChats((cs) => [...cs, newChat]);
-      setChatId(nextChatId);
-      setNextChatId((n) => n + 1);
+  async function refreshConversations() {
+    try {
+      const res = await fetch("/api/messages");
+      const data = await res.json();
+      setChats((prev) => {
+        const prevById = new Map(prev.map((c) => [c.id, c]));
+        return (data.conversations || []).map((c: { id: number; alias: string; status: string; unread: boolean }) => ({
+          id: c.id,
+          alias: c.alias,
+          status: c.status,
+          unread: c.unread,
+          msgs: prevById.get(c.id)?.msgs ?? [],
+        }));
+      });
+    } catch {
+      // keep whatever conversations we already have
     }
-    setChatOpen(true);
   }
 
-  function pushDm() {
+  async function refreshMessages(conversationId: number) {
+    try {
+      const res = await fetch(`/api/messages/${conversationId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setChats((prev) => prev.map((c) => (c.id === conversationId ? { ...c, msgs: data.messages || [], unread: false } : c)));
+    } catch {
+      // keep whatever messages we already have
+    }
+  }
+
+  function selectChat(id: number) {
+    setChatId(id);
+    refreshMessages(id);
+  }
+
+  async function openChatWithAlias(targetAlias: string) {
+    if (!requireAuth()) return;
+    setChatOpen(true);
+    try {
+      const res = await fetch("/api/messages/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias: targetAlias }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        pushToast(data.error || "No se pudo abrir la conversación.");
+        return;
+      }
+      setChats((prev) => (prev.some((c) => c.id === data.id) ? prev : [...prev, { id: data.id, alias: data.alias, status: "Sin mensajes todavía", unread: false, msgs: [] }]));
+      setChatId(data.id);
+      await refreshMessages(data.id);
+    } catch {
+      pushToast("No se pudo abrir la conversación.");
+    }
+  }
+
+  async function pushDm() {
     const text = dmDraft.trim();
-    if (!text) return;
-    setChats((cs) => cs.map((c) => (c.id !== chatId ? c : { ...c, msgs: [...c.msgs, { me: true, text }], unread: false })));
+    if (!text || activeChatId == null) return;
     setDmDraft("");
+    try {
+      const res = await fetch(`/api/messages/${activeChatId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setChats((prev) => prev.map((c) => (c.id === activeChatId ? { ...c, msgs: data.messages || [], unread: false } : c)));
+      await refreshConversations();
+    } catch {
+      // message just won't appear; user can retry
+    }
   }
 
   async function markAllNotificationsRead() {
@@ -588,8 +658,6 @@ export default function ElRinconApp({
     setNotifications((ns) => ns.map((item) => (item.id === n.id ? { ...item, read: true } : item)));
     openThread(n.postId);
   }
-
-  const chat = chats.find((c) => c.id === chatId) || chats[0];
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
@@ -822,8 +890,8 @@ export default function ElRinconApp({
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         chats={chats}
-        activeChatId={chat?.id ?? null}
-        onSelectChat={setChatId}
+        activeChatId={activeChatId}
+        onSelectChat={selectChat}
         dmDraft={dmDraft}
         onDmDraftChange={setDmDraft}
         onDmKey={(e) => {
