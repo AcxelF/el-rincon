@@ -12,6 +12,15 @@ export async function POST(request: NextRequest) {
   const alias = normalizeAlias(typeof body?.alias === "string" ? body.alias : "");
   const password = typeof body?.password === "string" ? body.password : "";
 
+  if (alias) {
+    // Per-account lockout: catches attempts spread across many IPs targeting one alias,
+    // which the IP-based limiter above can't see.
+    const allowedAccount = await checkRateLimit(`login-account:${alias}`, 10, 15 * 60 * 1000);
+    if (!allowedAccount) {
+      return NextResponse.json({ error: "Demasiados intentos. Espera unos minutos y vuelve a intentar." }, { status: 429 });
+    }
+  }
+
   const user = await findUserByAlias(alias);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Nombre de usuario o contraseña incorrectos." }, { status: 401 });

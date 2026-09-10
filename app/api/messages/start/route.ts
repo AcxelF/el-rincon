@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByAlias, getUserFromRequest, normalizeAlias } from "@/lib/auth";
 import { getOrCreateConversation } from "@/lib/messages";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
+  const allowed = await checkRateLimit(`start-conversation:${user.id}`, 20, 5 * 60 * 1000);
+  if (!allowed) return NextResponse.json({ error: "Estás iniciando demasiadas conversaciones. Espera un momento." }, { status: 429 });
 
   const body = await request.json().catch(() => null);
   const alias = normalizeAlias(typeof body?.alias === "string" ? body.alias : "");

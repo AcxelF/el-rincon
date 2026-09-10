@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByAlias, getUserFromRequest, isValidAlias, isValidBio, normalizeAlias, updateUserAlias, updateUserBio } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request);
@@ -11,6 +12,9 @@ export async function PATCH(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
+
+  const allowed = await checkRateLimit(`edit-profile:${user.id}`, 10, 10 * 60 * 1000);
+  if (!allowed) return NextResponse.json({ error: "Estás editando tu perfil demasiado rápido. Espera un momento." }, { status: 429 });
 
   const body = await request.json().catch(() => null);
   let nextAlias = user.alias;

@@ -38,7 +38,7 @@ export function isValidBio(bio: string): boolean {
 }
 
 function hashPassword(password: string): string {
-  return bcrypt.hashSync(password, 10);
+  return bcrypt.hashSync(password, 12);
 }
 
 export function verifyPassword(password: string, hash: string): boolean {

@@ -319,16 +319,22 @@ export async function toggleBestAnswer(postId: number, commentId: number): Promi
   await run("UPDATE posts SET best_answer_id = :next WHERE id = :postId", { postId, next });
 }
 
-export async function reportPost(postId: number): Promise<void> {
+export async function reportPost(postId: number): Promise<{ ok: boolean; error?: string }> {
+  const post = await getOne("SELECT 1 as x FROM posts WHERE id = :postId", { postId });
+  if (!post) return { ok: false, error: "La publicación no existe." };
+
   const existing = await getOne("SELECT 1 as x FROM reports WHERE kind = 'post' AND post_id = :postId", { postId });
-  if (existing) return;
-  await run("INSERT INTO reports (kind, post_id) VALUES ('post', :postId)", { postId });
+  if (!existing) await run("INSERT INTO reports (kind, post_id) VALUES ('post', :postId)", { postId });
+  return { ok: true };
 }
 
-export async function reportComment(postId: number, commentId: number): Promise<void> {
+export async function reportComment(postId: number, commentId: number): Promise<{ ok: boolean; error?: string }> {
+  const comment = await getOne("SELECT 1 as x FROM comments WHERE id = :commentId AND post_id = :postId", { commentId, postId });
+  if (!comment) return { ok: false, error: "El comentario no existe." };
+
   const existing = await getOne("SELECT 1 as x FROM reports WHERE kind = 'comment' AND comment_id = :commentId", { commentId });
-  if (existing) return;
-  await run("INSERT INTO reports (kind, post_id, comment_id) VALUES ('comment', :postId, :commentId)", { postId, commentId });
+  if (!existing) await run("INSERT INTO reports (kind, post_id, comment_id) VALUES ('comment', :postId, :commentId)", { postId, commentId });
+  return { ok: true };
 }
 
 export async function dismissReport(reportId: number): Promise<void> {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { followUser, getFollowStats, getUserFromRequest, normalizeAlias, unfollowUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const alias = normalizeAlias(request.nextUrl.searchParams.get("alias") || "");
@@ -12,6 +13,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
+  const allowed = await checkRateLimit(`follow:${user.id}`, 30, 5 * 60 * 1000);
+  if (!allowed) return NextResponse.json({ error: "Estás siguiendo/dejando de seguir demasiado rápido. Espera un momento." }, { status: 429 });
 
   const body = await request.json().catch(() => null);
   const alias = normalizeAlias(typeof body?.alias === "string" ? body.alias : "");
