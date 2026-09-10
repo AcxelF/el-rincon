@@ -94,8 +94,18 @@ export async function createUser(alias: string, password: string, isAdmin = fals
   return { id, alias, isAdmin, isBanned: false, isMuted: false, bannedUntil: null, mutedUntil: null, badge: null, bio: null };
 }
 
+export const ALIAS_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
 export async function updateUserAlias(userId: string, alias: string) {
-  await run("UPDATE users SET alias = ? WHERE id = ?", [alias, userId]);
+  await run("UPDATE users SET alias = ?, alias_changed_at = ? WHERE id = ?", [alias, Date.now(), userId]);
+}
+
+/** Returns how many ms remain before this user may change their alias again, or 0 if they can now. */
+export async function getAliasChangeCooldownRemaining(userId: string): Promise<number> {
+  const row = await getOne<{ aliasChangedAt: number | null }>("SELECT alias_changed_at as aliasChangedAt FROM users WHERE id = ?", [userId]);
+  if (!row?.aliasChangedAt) return 0;
+  const remaining = ALIAS_CHANGE_COOLDOWN_MS - (Date.now() - row.aliasChangedAt);
+  return remaining > 0 ? remaining : 0;
 }
 
 export async function updateUserBio(userId: string, bio: string) {

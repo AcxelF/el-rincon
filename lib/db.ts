@@ -36,6 +36,7 @@ const SCHEMA_STATEMENTS = [
     muted_until INTEGER,
     badge TEXT,
     bio TEXT,
+    alias_changed_at INTEGER,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS sessions (
@@ -159,7 +160,7 @@ async function migrate() {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
     }
   }
-  for (const column of ["banned_until", "muted_until"]) {
+  for (const column of ["banned_until", "muted_until", "alias_changed_at"]) {
     if (!userColumns.includes(column)) {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} INTEGER`);
     }

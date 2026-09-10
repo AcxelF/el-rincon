@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findUserByAlias, getUserFromRequest, isValidAlias, isValidBio, normalizeAlias, updateUserAlias, updateUserBio } from "@/lib/auth";
+import {
+  findUserByAlias,
+  getAliasChangeCooldownRemaining,
+  getUserFromRequest,
+  isValidAlias,
+  isValidBio,
+  normalizeAlias,
+  updateUserAlias,
+  updateUserBio,
+} from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
@@ -25,11 +34,21 @@ export async function PATCH(request: NextRequest) {
     if (!isValidAlias(alias)) {
       return NextResponse.json({ error: "El nombre de usuario debe tener 3 a 24 caracteres: letras, números, puntos o guiones bajos." }, { status: 400 });
     }
-    const existing = await findUserByAlias(alias);
-    if (existing && existing.id !== user.id) {
-      return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
+    if (alias !== user.alias) {
+      const cooldownRemaining = await getAliasChangeCooldownRemaining(user.id);
+      if (cooldownRemaining > 0) {
+        const days = Math.ceil(cooldownRemaining / (24 * 60 * 60 * 1000));
+        return NextResponse.json(
+          { error: `Solo puedes cambiar tu nombre de usuario una vez cada 7 días. Podrás cambiarlo de nuevo en ${days} ${days === 1 ? "día" : "días"}.` },
+          { status: 429 }
+        );
+      }
+      const existing = await findUserByAlias(alias);
+      if (existing && existing.id !== user.id) {
+        return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
+      }
+      await updateUserAlias(user.id, alias);
     }
-    await updateUserAlias(user.id, alias);
     nextAlias = alias;
   }
 
