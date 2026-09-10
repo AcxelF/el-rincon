@@ -73,7 +73,9 @@ export default function AuthScreen({
   const form = (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div className="field">
-        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>Nombre de usuario</label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          {mode === "register" ? "Crear nombre de usuario" : "Nombre de usuario"}
+        </label>
         <input
           className="input auth-input"
           type="text"
@@ -86,7 +88,9 @@ export default function AuthScreen({
         />
       </div>
       <div className="field">
-        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>Contraseña</label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          {mode === "register" ? "Crear contraseña" : "Contraseña"}
+        </label>
         <input
           className="input auth-input"
           type="password"
