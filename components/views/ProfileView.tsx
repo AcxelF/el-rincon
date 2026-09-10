@@ -199,7 +199,7 @@ export default function ProfileView({
           )}
         </div>
         {!editing && (
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {isSelf ? (
               <>
                 <button className="btn btn-secondary" onClick={startEditing}>
