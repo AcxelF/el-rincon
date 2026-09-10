@@ -11,18 +11,18 @@ if (!remoteUrl) {
 }
 
 declare global {
-  var __patioDb: Client | undefined;
-  var __patioDbReady: Promise<void> | undefined;
+  var __rinconDb: Client | undefined;
+  var __rinconDbReady: Promise<void> | undefined;
 }
 
 export const db: Client =
-  globalThis.__patioDb ??
+  globalThis.__rinconDb ??
   createClient({
     url: remoteUrl || "file:./data/app.db",
     authToken,
     intMode: "number",
   });
-if (process.env.NODE_ENV !== "production") globalThis.__patioDb = db;
+if (process.env.NODE_ENV !== "production") globalThis.__rinconDb = db;
 
 const SCHEMA_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -151,8 +151,8 @@ async function migrate() {
   }
 }
 
-export const dbReady: Promise<void> = globalThis.__patioDbReady ?? migrate();
-if (process.env.NODE_ENV !== "production") globalThis.__patioDbReady = dbReady;
+export const dbReady: Promise<void> = globalThis.__rinconDbReady ?? migrate();
+if (process.env.NODE_ENV !== "production") globalThis.__rinconDbReady = dbReady;
 
 export type SqlArg = string | number | null;
 export type SqlArgs = SqlArg[] | Record<string, SqlArg>;

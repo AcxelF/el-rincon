@@ -361,7 +361,7 @@ function UsersTab({
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <input
         className="input"
-        placeholder="Buscar usuario por alias…"
+        placeholder="Buscar usuario por nombre de usuario…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         style={{ minHeight: 38, background: "var(--color-surface)" }}

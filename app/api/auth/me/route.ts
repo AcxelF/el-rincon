@@ -19,11 +19,11 @@ export async function PATCH(request: NextRequest) {
   if (typeof body?.alias === "string") {
     const alias = normalizeAlias(body.alias);
     if (!isValidAlias(alias)) {
-      return NextResponse.json({ error: "El alias debe tener 3 a 24 caracteres: letras, números, puntos o guiones bajos." }, { status: 400 });
+      return NextResponse.json({ error: "El nombre de usuario debe tener 3 a 24 caracteres: letras, números, puntos o guiones bajos." }, { status: 400 });
     }
     const existing = await findUserByAlias(alias);
     if (existing && existing.id !== user.id) {
-      return NextResponse.json({ error: "Ese alias ya está en uso." }, { status: 409 });
+      return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
     }
     await updateUserAlias(user.id, alias);
     nextAlias = alias;

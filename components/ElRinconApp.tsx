@@ -16,8 +16,8 @@ import { CATEGORIES, INITIAL_CHATS } from "@/lib/mock-data";
 import { initials } from "@/lib/style-helpers";
 import type { AppNotification, Category, Chat, DecoratedPost, RankingUser, Report, SortMode, View } from "@/lib/types";
 
-const THEME_KEY = "patio-theme";
-const FOLLOWED_CATEGORIES_KEY = "patio-followed-categories";
+const THEME_KEY = "rincon-theme";
+const FOLLOWED_CATEGORIES_KEY = "rincon-followed-categories";
 
 interface ProfileStats {
   karma: number;
@@ -25,7 +25,7 @@ interface ProfileStats {
   rank: number;
 }
 
-export default function PatioApp({
+export default function ElRinconApp({
   initialAlias,
   isAdmin,
   isMuted,
@@ -448,14 +448,14 @@ export default function PatioApp({
   async function saveAlias(next: string): Promise<string | undefined> {
     if (!requireAuth()) return "Inicia sesión para continuar.";
     const clean = next.trim().replace(/\s+/g, "");
-    if (!clean) return "El alias no puede estar vacío.";
+    if (!clean) return "El nombre de usuario no puede estar vacío.";
     const res = await fetch("/api/auth/me", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ alias: clean }),
     });
     const data = await res.json();
-    if (!res.ok) return data.error || "No se pudo guardar el alias.";
+    if (!res.ok) return data.error || "No se pudo guardar el nombre de usuario.";
     setAlias(data.user.alias);
     return undefined;
   }
@@ -557,7 +557,7 @@ export default function PatioApp({
     if (existing) {
       setChatId(existing.id);
     } else {
-      const newChat: Chat = { id: nextChatId, alias: targetAlias, status: "alias registrado", unread: false, msgs: [] };
+      const newChat: Chat = { id: nextChatId, alias: targetAlias, status: "usuario registrado", unread: false, msgs: [] };
       setChats((cs) => [...cs, newChat]);
       setChatId(nextChatId);
       setNextChatId((n) => n + 1);

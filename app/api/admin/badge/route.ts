@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await setUserBadge(alias, badgeRaw || null);
-  if (!user) return NextResponse.json({ error: "No existe una cuenta con ese alias." }, { status: 404 });
+  if (!user) return NextResponse.json({ error: "No existe una cuenta con ese nombre de usuario." }, { status: 404 });
 
   return NextResponse.json({ user });
 }

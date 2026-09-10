@@ -4,7 +4,7 @@ import { commentsAuthoredBy, getRanking, karmaFor } from "@/lib/posts";
 
 export async function GET(request: NextRequest) {
   const alias = normalizeAlias(request.nextUrl.searchParams.get("alias") || "");
-  if (!alias) return NextResponse.json({ error: "Falta el alias." }, { status: 400 });
+  if (!alias) return NextResponse.json({ error: "Falta el nombre de usuario." }, { status: 400 });
 
   const user = await findUserByAlias(alias);
   if (!user) return NextResponse.json({ karma: 0, commentCount: 0, rank: 0 });

@@ -155,7 +155,7 @@ export default function Header({
       <div className="header-desktop-only" style={{ flex: 1, minWidth: 150, maxWidth: 560, margin: "0 auto" }}>
         <input
           className="input"
-          placeholder="Busca hilos, alias, quedadas…"
+          placeholder="Busca hilos, usuarios, quedadas…"
           style={{ minHeight: 40, paddingLeft: 16 }}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -277,7 +277,7 @@ export default function Header({
             <input
               className="input"
               autoFocus
-              placeholder="Busca hilos, alias, quedadas…"
+              placeholder="Busca hilos, usuarios, quedadas…"
               style={{ minHeight: 40, paddingLeft: 16 }}
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}

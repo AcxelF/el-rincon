@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 const THEME_SCRIPT = `
 (function () {
   try {
-    var saved = window.localStorage.getItem('patio-theme');
+    var saved = window.localStorage.getItem('rincon-theme');
     document.body.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
   } catch (e) {}
 })();

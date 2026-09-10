@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AuthScreen from "@/components/AuthScreen";
-import PatioApp from "@/components/PatioApp";
+import ElRinconApp from "@/components/ElRinconApp";
 
 export default function AuthGate() {
   const [status, setStatus] = useState<"loading" | "guest" | "authed">("loading");
@@ -49,14 +49,14 @@ export default function AuthGate() {
   if (status === "guest") {
     return (
       <>
-        <PatioApp key="guest" initialAlias="" isAdmin={false} isMuted={false} isGuest onRequireAuth={() => setPromptAuth(true)} onLogout={() => {}} />
+        <ElRinconApp key="guest" initialAlias="" isAdmin={false} isMuted={false} isGuest onRequireAuth={() => setPromptAuth(true)} onLogout={() => {}} />
         {promptAuth && <AuthScreen onAuthed={handleAuthed} onClose={() => setPromptAuth(false)} />}
       </>
     );
   }
 
   return (
-    <PatioApp
+    <ElRinconApp
       key={`authed-${alias}`}
       initialAlias={alias}
       isAdmin={isAdmin}

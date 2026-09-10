@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await setUserBanned(alias, banned, durationMs);
-  if (!user) return NextResponse.json({ error: "No existe una cuenta con ese alias." }, { status: 404 });
+  if (!user) return NextResponse.json({ error: "No existe una cuenta con ese nombre de usuario." }, { status: 404 });
 
   return NextResponse.json({ user });
 }

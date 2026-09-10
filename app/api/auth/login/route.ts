@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   const user = await findUserByAlias(alias);
   if (!user || !verifyPassword(password, user.passwordHash)) {
-    return NextResponse.json({ error: "Alias o contraseña incorrectos." }, { status: 401 });
+    return NextResponse.json({ error: "Nombre de usuario o contraseña incorrectos." }, { status: 401 });
   }
   if (user.isBanned) {
     return NextResponse.json({ error: "Esta cuenta fue suspendida por un administrador." }, { status: 403 });

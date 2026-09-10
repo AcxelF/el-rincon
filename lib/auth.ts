@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
 import { run, getOne, getAll } from "./db";
 
-export const SESSION_COOKIE_NAME = "patio_session";
+export const SESSION_COOKIE_NAME = "rincon_session";
 const SESSION_DAYS = 30;
 export const SESSION_MAX_AGE_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
@@ -233,7 +233,7 @@ export async function getFollowStats(alias: string, viewerId?: string): Promise<
 
 export async function followUser(followerId: string, followeeAlias: string): Promise<{ ok: boolean; error?: string }> {
   const followee = await findUserByAlias(followeeAlias);
-  if (!followee) return { ok: false, error: "No existe una cuenta con ese alias." };
+  if (!followee) return { ok: false, error: "No existe una cuenta con ese nombre de usuario." };
   if (followee.id === followerId) return { ok: false, error: "No puedes seguirte a ti mismo." };
   await run("INSERT OR IGNORE INTO follows (follower_id, followee_id) VALUES (?, ?)", [followerId, followee.id]);
   return { ok: true };

@@ -200,7 +200,7 @@ export default function ProfileView({
             {isSelf ? (
               <>
                 <button className="btn btn-secondary" onClick={startEditing}>
-                  Editar alias
+                  Editar nombre de usuario
                 </button>
                 <button className="btn btn-secondary" onClick={onLogout}>
                   Cerrar sesión

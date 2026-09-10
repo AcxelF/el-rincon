@@ -91,7 +91,7 @@ export default function AuthScreen({
   const form = (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div className="field">
-        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>Alias</label>
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>Nombre de usuario</label>
         <input
           className="input auth-input"
           placeholder="Nombre de usuario"
@@ -124,7 +124,7 @@ export default function AuthScreen({
 
   const footnote = (
     <div style={{ fontSize: 11.5, textAlign: "center", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-      No pedimos correo ni nombre real. Solo tú sabes quién eres detrás de tu alias.
+      No pedimos correo ni nombre real. Solo tú sabes quién eres detrás de tu nombre de usuario.
     </div>
   );
 
@@ -165,7 +165,7 @@ export default function AuthScreen({
             El Rincón de la Científica del Sur
           </h1>
           <p className="auth-hero-copy" style={{ fontSize: 15.5, lineHeight: 1.6, color: "rgba(255,255,255,0.75)", maxWidth: 360, marginTop: 14 }}>
-            Chismes, quedadas y confesiones — sin tu nombre real, solo tu alias.
+            Chismes, quedadas y confesiones — sin tu nombre real, solo tu nombre de usuario.
           </p>
           <Image
             src="/logo.png"
@@ -185,7 +185,7 @@ export default function AuthScreen({
                 {mode === "register" ? "Crea tu cuenta" : "Inicia sesión"}
               </div>
               <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 4 }}>
-                {mode === "register" ? "Solo necesitas un alias y una contraseña." : "Entra con tu alias."}
+                {mode === "register" ? "Solo necesitas un nombre de usuario y una contraseña." : "Entra con tu nombre de usuario."}
               </div>
             </div>
             {modeSwitch}

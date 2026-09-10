@@ -22,13 +22,13 @@ export async function POST(request: NextRequest) {
   const password = typeof body?.password === "string" ? body.password : "";
 
   if (!isValidAlias(alias)) {
-    return NextResponse.json({ error: "El alias debe tener 3 a 24 caracteres: letras, números, puntos o guiones bajos." }, { status: 400 });
+    return NextResponse.json({ error: "El nombre de usuario debe tener 3 a 24 caracteres: letras, números, puntos o guiones bajos." }, { status: 400 });
   }
   if (!isValidPassword(password)) {
     return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres." }, { status: 400 });
   }
   if (await findUserByAlias(alias)) {
-    return NextResponse.json({ error: "Ese alias ya está en uso." }, { status: 409 });
+    return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
   }
 
   const user = await createUser(alias, password);
