@@ -656,7 +656,7 @@ export default function PatioApp({
               anon={anon}
               onToggleAnon={() => setAnon((a) => !a)}
               onPublish={publish}
-              feedTitle={search.trim() ? `Resultados para "${search.trim()}"` : cat === "all" ? "Lo que se está cocinando" : categoryLabel(cat)}
+              feedTitle={search.trim() ? `Resultados para "${search.trim()}"` : cat === "all" ? "Publicaciones recientes" : categoryLabel(cat)}
               emptyMessage={search.trim() ? "No encontramos nada por aquí. Prueba con otra palabra." : "Todavía no hay nada por aquí. ¡Sé la primera persona en publicar!"}
               sort={sort}
               onSortChange={setSort}
