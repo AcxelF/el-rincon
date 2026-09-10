@@ -4,7 +4,15 @@ import type { RankingUser } from "@/lib/types";
 import { formatKarma } from "@/lib/mock-data";
 import { avatarForAlias, initials } from "@/lib/style-helpers";
 
-export default function RailRight({ ranking, onGoRank }: { ranking: RankingUser[]; onGoRank: () => void }) {
+export default function RailRight({
+  ranking,
+  onGoRank,
+  onViewProfile,
+}: {
+  ranking: RankingUser[];
+  onGoRank: () => void;
+  onViewProfile: (alias: string) => void;
+}) {
   const topPeople = ranking.slice(0, 4);
 
   return (
@@ -30,7 +38,12 @@ export default function RailRight({ ranking, onGoRank }: { ranking: RankingUser[
           Karma acumulado por likes y votos recibidos.
         </div>
         {topPeople.map((u) => (
-          <div key={u.alias} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
+          <div
+            key={u.alias}
+            className="alias-link"
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}
+            onClick={() => onViewProfile(u.alias)}
+          >
             <div style={avatarForAlias(u.alias, 34)}>{initials(u.alias)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 600 }}>{u.alias}</div>

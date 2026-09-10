@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChartBar, Check, Paperclip, Question } from "@phosphor-icons/react";
 import type { DecoratedPost, SortMode } from "@/lib/types";
-import { ARROW, ARROW_DOWN, ARROW_UP, avatarStyle, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
+import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
 import Badge from "@/components/Badge";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
@@ -51,6 +51,7 @@ export default function FeedView({
   onPublish,
   feedTitle,
   emptyMessage,
+  matchingUsers,
   sort,
   onSortChange,
   posts,
@@ -80,6 +81,7 @@ export default function FeedView({
   onPublish: (pollOptions?: string[], isQuestion?: boolean) => Promise<boolean>;
   feedTitle: string;
   emptyMessage: string;
+  matchingUsers: { alias: string; badge: string | null }[];
   sort: SortMode;
   onSortChange: (s: SortMode) => void;
   posts: DecoratedPost[];
@@ -315,7 +317,42 @@ export default function FeedView({
         </div>
       </div>
 
-      {posts.length === 0 && (
+      {matchingUsers.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+              color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+            }}
+          >
+            Personas
+          </div>
+          {matchingUsers.map((u) => (
+            <div
+              key={u.alias}
+              className="alias-link"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 14px",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--color-neutral-100)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+              onClick={() => onViewProfile(u.alias)}
+            >
+              <div style={avatarForAlias(u.alias, 34)}>{initials(u.alias)}</div>
+              <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>{u.alias}</div>
+              <Badge label={u.badge ?? undefined} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {posts.length === 0 && matchingUsers.length === 0 && (
         <div style={{ padding: "28px 22px", textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>{emptyMessage}</div>
       )}
 

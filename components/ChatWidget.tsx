@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import type { Chat, ChatMessage } from "@/lib/types";
 import { avatarForAlias, bubbleRowStyle, bubbleStyle, chatDotStyle, initials } from "@/lib/style-helpers";
 import Badge from "@/components/Badge";
@@ -11,6 +12,7 @@ export default function ChatWidget({
   chats,
   activeChatId,
   onSelectChat,
+  onStartChat,
   dmDraft,
   onDmDraftChange,
   onDmKey,
@@ -22,6 +24,7 @@ export default function ChatWidget({
   chats: Chat[];
   activeChatId: number | null;
   onSelectChat: (id: number) => void;
+  onStartChat: (alias: string) => void;
   dmDraft: string;
   onDmDraftChange: (v: string) => void;
   onDmKey: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -30,11 +33,46 @@ export default function ChatWidget({
 }) {
   const chat = chats.find((c) => c.id === activeChatId) || chats[0];
   const msgsEndRef = useRef<HTMLDivElement>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ alias: string; badge: string | null }[]>([]);
 
   useEffect(() => {
     if (!open) return;
     msgsEndRef.current?.scrollIntoView({ block: "end" });
   }, [open, chat?.id, chat?.msgs.length]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const q = query.trim();
+    if (!q) return;
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      fetch(`/api/users/search?q=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) setResults(data.users || []);
+        })
+        .catch(() => {
+          // keep whatever results we already have
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [query, searchOpen]);
+
+  function openSearch() {
+    setSearchOpen(true);
+    setQuery("");
+    setResults([]);
+  }
+
+  function pickResult(alias: string) {
+    setSearchOpen(false);
+    onStartChat(alias);
+  }
 
   if (!open) return null;
 
@@ -68,12 +106,78 @@ export default function ChatWidget({
         }}
       >
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1 }}>Mensajes</span>
+        {!searchOpen && (
+          <button
+            className="btn btn-ghost"
+            style={{ minHeight: 28, width: 28, padding: 0, display: "grid", placeItems: "center" }}
+            onClick={openSearch}
+            aria-label="Nueva conversación"
+            title="Nueva conversación"
+          >
+            <Plus size={15} weight="bold" />
+          </button>
+        )}
         <button className="btn btn-ghost" style={{ minHeight: 28, width: 28, padding: 0, fontSize: 14 }} onClick={onClose}>
           ✕
         </button>
       </div>
 
-      {!chat ? (
+      {searchOpen ? (
+        <>
+          <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--color-divider)" }}>
+            <div style={{ position: "relative" }}>
+              <MagnifyingGlass
+                size={15}
+                style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", opacity: 0.5, pointerEvents: "none" }}
+              />
+              <input
+                autoFocus
+                className="input"
+                placeholder="Busca a alguien por su nombre de usuario…"
+                style={{ minHeight: 38, paddingLeft: 34, background: "var(--color-surface)" }}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {query.trim() && results.length === 0 && (
+              <div
+                style={{
+                  padding: 20,
+                  textAlign: "center",
+                  fontSize: 13,
+                  color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                }}
+              >
+                No encontramos a nadie con ese nombre.
+              </div>
+            )}
+            {(query.trim() ? results : []).map((u) => (
+              <button
+                key={u.alias}
+                className="chip-btn"
+                onClick={() => pickResult(u.alias)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  padding: "10px 14px",
+                  border: 0,
+                  background: "transparent",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={avatarForAlias(u.alias, 32)}>{initials(u.alias)}</div>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{u.alias}</span>
+                <Badge label={u.badge ?? undefined} />
+              </button>
+            ))}
+          </div>
+        </>
+      ) : !chat ? (
         <div
           style={{
             flex: 1,
@@ -87,7 +191,9 @@ export default function ChatWidget({
             color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
           }}
         >
-          Todavía no tienes mensajes. Ve al perfil de alguien y dale a &quot;Mensaje&quot; para empezar una conversación.
+          Todavía no tienes mensajes. Toca el{" "}
+          <Plus size={12} weight="bold" style={{ display: "inline", verticalAlign: "middle" }} /> de arriba para buscar a alguien y empezar una
+          conversación.
         </div>
       ) : (
         <>

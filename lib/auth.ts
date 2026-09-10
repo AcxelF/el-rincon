@@ -253,6 +253,17 @@ export async function getFollowingAliases(userId: string): Promise<string[]> {
   return rows.map((r) => r.alias);
 }
 
+export interface UserSearchResult {
+  alias: string;
+  badge: string | null;
+}
+
+export async function searchUsersByAlias(query: string, limit = 8): Promise<UserSearchResult[]> {
+  const clean = query.trim().replace(/[%_]/g, "");
+  if (!clean) return [];
+  return getAll<UserSearchResult>("SELECT alias, badge FROM users WHERE alias LIKE ? COLLATE NOCASE ORDER BY alias LIMIT ?", [`%${clean}%`, limit]);
+}
+
 export async function getUserCreatedAt(alias: string): Promise<string | undefined> {
   const row = await getOne<{ createdAt: string }>("SELECT created_at as createdAt FROM users WHERE alias = ? COLLATE NOCASE", [alias]);
   return row?.createdAt;

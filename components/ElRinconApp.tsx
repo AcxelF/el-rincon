@@ -46,6 +46,7 @@ export default function ElRinconApp({
   const [cat, setCat] = useState("all");
   const [sort, setSort] = useState<SortMode>("Recientes");
   const [search, setSearch] = useState("");
+  const [matchingUsers, setMatchingUsers] = useState<{ alias: string; badge: string | null }[]>([]);
   const [alias, setAlias] = useState(initialAlias);
   const [anon, setAnon] = useState(false);
   const [dark, setDark] = useState(false);
@@ -192,6 +193,26 @@ export default function ElRinconApp({
         // keep whatever notifications we already have
       });
   }, [isGuest]);
+
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) return;
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      fetch(`/api/users/search?q=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) setMatchingUsers(data.users || []);
+        })
+        .catch(() => {
+          // keep whatever matches we already have
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [search]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -727,6 +748,7 @@ export default function ElRinconApp({
               onPublish={publish}
               feedTitle={search.trim() ? `Resultados para "${search.trim()}"` : cat === "all" ? "Publicaciones recientes" : categoryLabel(cat)}
               emptyMessage={search.trim() ? "No encontramos nada por aquí. Prueba con otra palabra." : "Todavía no hay nada por aquí. ¡Sé la primera persona en publicar!"}
+              matchingUsers={search.trim() ? matchingUsers : []}
               sort={sort}
               onSortChange={setSort}
               posts={feedPosts}
@@ -781,7 +803,7 @@ export default function ElRinconApp({
             />
           )}
 
-          {view === "rank" && <RankView ranking={liveRanking} />}
+          {view === "rank" && <RankView ranking={liveRanking} onViewProfile={viewProfile} />}
 
           {view === "profile" && (
             <ProfileView
@@ -837,7 +859,7 @@ export default function ElRinconApp({
           )}
         </main>
 
-        <RailRight ranking={liveRanking} onGoRank={() => setView("rank")} />
+        <RailRight ranking={liveRanking} onGoRank={() => setView("rank")} onViewProfile={viewProfile} />
       </div>
 
       <ToastStack toasts={toasts} />
@@ -892,6 +914,7 @@ export default function ElRinconApp({
         chats={chats}
         activeChatId={activeChatId}
         onSelectChat={selectChat}
+        onStartChat={openChatWithAlias}
         dmDraft={dmDraft}
         onDmDraftChange={setDmDraft}
         onDmKey={(e) => {

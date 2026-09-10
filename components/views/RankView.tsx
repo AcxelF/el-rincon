@@ -6,7 +6,7 @@ import { avatarForAlias, initials, podiumCardStyle } from "@/lib/style-helpers";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-export default function RankView({ ranking }: { ranking: RankingUser[] }) {
+export default function RankView({ ranking, onViewProfile }: { ranking: RankingUser[]; onViewProfile: (alias: string) => void }) {
   const podium = ranking.slice(0, 3);
 
   return (
@@ -20,7 +20,7 @@ export default function RankView({ ranking }: { ranking: RankingUser[] }) {
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
         {podium.map((p, i) => (
-          <div key={p.alias} style={podiumCardStyle(i)}>
+          <div key={p.alias} className="alias-link" style={podiumCardStyle(i)} onClick={() => onViewProfile(p.alias)}>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 30, lineHeight: 1 }}>{MEDALS[i]}</div>
             <div style={avatarForAlias(p.alias, 52)}>{initials(p.alias)}</div>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, lineHeight: 1.15 }}>{p.alias}</div>
@@ -32,7 +32,12 @@ export default function RankView({ ranking }: { ranking: RankingUser[] }) {
 
       <div style={{ padding: "8px 20px 16px", borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)", boxShadow: "var(--shadow-sm)" }}>
         {ranking.map((r, i) => (
-          <div key={r.alias} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--color-divider)" }}>
+          <div
+            key={r.alias}
+            className="alias-link"
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--color-divider)" }}
+            onClick={() => onViewProfile(r.alias)}
+          >
             <span style={{ width: 26, fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
               {i + 1}
             </span>
