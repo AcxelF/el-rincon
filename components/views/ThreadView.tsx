@@ -138,6 +138,13 @@ export default function ThreadView({
             {renderFormattedText(post.body)}
           </p>
         )}
+        {post.imageUrl && (
+          <img
+            src={post.imageUrl}
+            alt=""
+            style={{ width: "100%", maxHeight: 560, objectFit: "cover", borderRadius: "var(--radius-lg)", display: "block" }}
+          />
+        )}
         {post.poll && (
           <div style={{ maxWidth: 420 }}>
             <Poll poll={post.poll} onVote={onVotePoll} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, ChartBar, Check, Paperclip, Question, X } from "@phosphor-icons/react";
+import { CaretDown, ChartBar, Check, Image as ImageIcon, Paperclip, Question, X } from "@phosphor-icons/react";
 import type { BadgeInfo, Category, DecoratedPost, SortMode } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
 import { iconForCategory } from "@/lib/category-icons";
@@ -62,6 +62,11 @@ export default function FeedView({
   onDraftChange,
   draftTitle,
   onDraftTitleChange,
+  draftImageUrl,
+  uploadingImage,
+  imageError,
+  onUploadImage,
+  onRemoveImage,
   categories,
   defaultCatId,
   followedCategoryIds,
@@ -99,6 +104,11 @@ export default function FeedView({
   onDraftChange: (v: string) => void;
   draftTitle: string;
   onDraftTitleChange: (v: string) => void;
+  draftImageUrl: string | null;
+  uploadingImage: boolean;
+  imageError: string;
+  onUploadImage: (file: File) => void;
+  onRemoveImage: () => void;
   categories: Category[];
   defaultCatId: string;
   followedCategoryIds: string[];
@@ -134,6 +144,7 @@ export default function FeedView({
 }) {
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
   const draftBodyRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const lastSyncedDraftRef = useRef<string>(draft);
   const [composerOpen, setComposerOpen] = useState(false);
   const [boldOn, setBoldOn] = useState(false);
@@ -335,6 +346,12 @@ export default function FeedView({
     });
   }
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) onUploadImage(file);
+  }
+
   async function handlePublish() {
     const published = await onPublish(composeCat, pollEnabled ? pollOptions : undefined, questionEnabled);
     if (published) {
@@ -509,6 +526,41 @@ export default function FeedView({
                 K
               </button>
             </div>
+
+            {uploadingImage && (
+              <div style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>Subiendo imagen…</div>
+            )}
+            {imageError && <div style={{ fontSize: 12.5, color: "var(--color-accent-2-800)" }}>{imageError}</div>}
+            {draftImageUrl && !uploadingImage && (
+              <div style={{ position: "relative", width: "fit-content" }}>
+                <img
+                  src={draftImageUrl}
+                  alt=""
+                  style={{ maxHeight: 160, maxWidth: "100%", borderRadius: "var(--radius-md)", display: "block" }}
+                />
+                <button
+                  type="button"
+                  aria-label="Quitar imagen"
+                  onClick={onRemoveImage}
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    display: "grid",
+                    placeItems: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    border: 0,
+                    background: "rgba(10, 14, 24, 0.65)",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            )}
 
             {pollEnabled && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -741,10 +793,39 @@ export default function FeedView({
                         <span style={{ flex: 1 }}>Pregunta</span>
                         {questionEnabled && <Check size={14} weight="bold" style={{ flex: "none" }} />}
                       </button>
+                      <button
+                        type="button"
+                        className="chip-btn"
+                        onClick={() => {
+                          imageInputRef.current?.click();
+                          setAttachMenuOpen(false);
+                        }}
+                        disabled={uploadingImage}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          width: "100%",
+                          padding: "8px 10px",
+                          border: 0,
+                          borderRadius: "var(--radius-sm)",
+                          background: draftImageUrl ? "var(--color-accent-200)" : "transparent",
+                          color: draftImageUrl ? "var(--color-accent-900)" : "var(--color-text)",
+                          fontSize: 13.5,
+                          fontWeight: draftImageUrl ? 600 : 500,
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <ImageIcon size={16} style={{ flex: "none" }} />
+                        <span style={{ flex: 1 }}>Imagen</span>
+                        {draftImageUrl && <Check size={14} weight="bold" style={{ flex: "none" }} />}
+                      </button>
                     </div>,
                       document.body
                     )}
                 </div>
+                <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {isGuest ? (
@@ -761,7 +842,7 @@ export default function FeedView({
                 >
                   {draft.length}/2000
                 </span>
-                <button className="btn btn-primary" onClick={handlePublish} disabled={isMuted || pollBlocking || overLimit}>
+                <button className="btn btn-primary" onClick={handlePublish} disabled={isMuted || pollBlocking || overLimit || uploadingImage}>
                   Publicar
                 </button>
               </div>
@@ -914,6 +995,22 @@ export default function FeedView({
                   </>
                 )}
               </p>
+            )}
+            {p.imageUrl && (
+              <img
+                src={p.imageUrl}
+                alt=""
+                loading="lazy"
+                onClick={() => onOpenPost(p.id)}
+                style={{
+                  width: "100%",
+                  maxHeight: 420,
+                  objectFit: "cover",
+                  borderRadius: "var(--radius-md)",
+                  cursor: "pointer",
+                  display: "block",
+                }}
+              />
             )}
             {p.poll && <Poll poll={p.poll} onVote={(optionId) => onVotePoll(p.id, optionId)} />}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>

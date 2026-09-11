@@ -42,6 +42,21 @@ export async function POST(request: NextRequest) {
   const isQuestion = !!body?.isQuestion;
   const pollOptions = Array.isArray(body?.pollOptions) ? body.pollOptions.filter((o: unknown) => typeof o === "string") : undefined;
 
-  const postId = await createPost({ userId: user.id, alias: user.alias, anon, cat, text, title: title || undefined, pollOptions, isQuestion });
+  const imageUrlRaw = typeof body?.imageUrl === "string" ? body.imageUrl.trim() : "";
+  if (imageUrlRaw && !/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//.test(imageUrlRaw)) {
+    return NextResponse.json({ error: "Imagen inválida." }, { status: 400 });
+  }
+
+  const postId = await createPost({
+    userId: user.id,
+    alias: user.alias,
+    anon,
+    cat,
+    text,
+    title: title || undefined,
+    imageUrl: imageUrlRaw || undefined,
+    pollOptions,
+    isQuestion,
+  });
   return NextResponse.json({ id: postId });
 }

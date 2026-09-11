@@ -34,6 +34,7 @@ interface PostRow {
   title: string;
   excerpt: string;
   body: string;
+  imageUrl: string | null;
   isQuestion: number;
   bestAnswerId: number | null;
   pinned: number;
@@ -48,7 +49,7 @@ interface PostRow {
 const POST_SELECT = `
   SELECT
     p.id as id, p.cat as cat, p.author as author, p.author_user_id as authorUserId,
-    p.created_at as createdAt, p.title as title, p.excerpt as excerpt, p.body as body,
+    p.created_at as createdAt, p.title as title, p.excerpt as excerpt, p.body as body, p.image_url as imageUrl,
     p.is_question as isQuestion, p.best_answer_id as bestAnswerId, p.pinned as pinned,
     COALESCE((SELECT SUM(value) FROM post_votes WHERE post_id = p.id), 0) as votes,
     COALESCE((SELECT COUNT(*) FROM post_likes WHERE post_id = p.id), 0) as likes,
@@ -90,6 +91,7 @@ async function decorateRow(row: PostRow, viewerUserId: string | null): Promise<D
     title: row.title,
     excerpt: row.excerpt,
     body: row.body,
+    imageUrl: row.imageUrl ?? null,
     votes: row.votes,
     commentCount: row.commentCount,
     voteValue: (row.voteValue ?? 0) as VoteValue,
@@ -204,15 +206,26 @@ export async function createPost(opts: {
   cat: string;
   text: string;
   title?: string;
+  imageUrl?: string | null;
   pollOptions?: string[];
   isQuestion?: boolean;
 }): Promise<number> {
   const author = opts.anon ? randomAnonLabel() : opts.alias;
   const title = opts.title?.trim() || (opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text);
   const result = await run(
-    `INSERT INTO posts (cat, author, author_user_id, is_anon, title, excerpt, body, is_question)
-     VALUES (:cat, :author, :userId, :isAnon, :title, :excerpt, :body, :isQuestion)`,
-    { cat: opts.cat, author, userId: opts.userId, isAnon: opts.anon ? 1 : 0, title, excerpt: opts.text, body: opts.text, isQuestion: opts.isQuestion ? 1 : 0 }
+    `INSERT INTO posts (cat, author, author_user_id, is_anon, title, excerpt, body, image_url, is_question)
+     VALUES (:cat, :author, :userId, :isAnon, :title, :excerpt, :body, :imageUrl, :isQuestion)`,
+    {
+      cat: opts.cat,
+      author,
+      userId: opts.userId,
+      isAnon: opts.anon ? 1 : 0,
+      title,
+      excerpt: opts.text,
+      body: opts.text,
+      imageUrl: opts.imageUrl ?? null,
+      isQuestion: opts.isQuestion ? 1 : 0,
+    }
   );
   const postId = Number(result.lastInsertRowid);
   const cleanOptions = (opts.pollOptions ?? []).map((o) => o.trim()).filter(Boolean);

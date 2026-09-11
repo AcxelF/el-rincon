@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import Header from "@/components/Header";
 import RailLeft from "@/components/RailLeft";
 import RailRight from "@/components/RailRight";
@@ -52,6 +53,9 @@ export default function ElRinconApp({
   const [dark, setDark] = useState(false);
   const [draft, setDraft] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
+  const [draftImageUrl, setDraftImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
   const [reply, setReply] = useState("");
   const [dmDraft, setDmDraft] = useState("");
   const [openId, setOpenId] = useState<number | null>(null);
@@ -504,6 +508,33 @@ export default function ElRinconApp({
     });
   }
 
+  async function uploadImage(file: File) {
+    if (!requireAuth()) return;
+    setImageError("");
+    if (!file.type.startsWith("image/")) {
+      setImageError("Solo se pueden subir imágenes.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setImageError("La imagen no puede superar los 8MB.");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const blob = await upload(file.name, file, { access: "public", handleUploadUrl: "/api/upload" });
+      setDraftImageUrl(blob.url);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage() {
+    setDraftImageUrl(null);
+    setImageError("");
+  }
+
   async function publish(catId: string, pollOptions?: string[], isQuestion?: boolean): Promise<boolean> {
     if (!requireAuth()) return false;
     if (isMuted) return false;
@@ -513,11 +544,12 @@ export default function ElRinconApp({
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, title: title || undefined, cat: catId, pollOptions, isQuestion, anon }),
+      body: JSON.stringify({ text, title: title || undefined, cat: catId, pollOptions, isQuestion, anon, imageUrl: draftImageUrl || undefined }),
     });
     if (!res.ok) return false;
     setDraft("");
     setDraftTitle("");
+    setDraftImageUrl(null);
     setSort("Recientes");
     setCat(catId);
     await refreshPosts();
@@ -802,6 +834,11 @@ export default function ElRinconApp({
               onDraftChange={setDraft}
               draftTitle={draftTitle}
               onDraftTitleChange={setDraftTitle}
+              draftImageUrl={draftImageUrl}
+              uploadingImage={uploadingImage}
+              imageError={imageError}
+              onUploadImage={uploadImage}
+              onRemoveImage={removeImage}
               categories={categories}
               defaultCatId={cat === "all" ? "Vida de campus" : cat}
               followedCategoryIds={followedCategoryIds}

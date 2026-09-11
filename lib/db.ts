@@ -68,7 +68,8 @@ const SCHEMA_STATEMENTS = [
     body TEXT NOT NULL,
     is_question INTEGER NOT NULL DEFAULT 0,
     best_answer_id INTEGER,
-    pinned INTEGER NOT NULL DEFAULT 0
+    pinned INTEGER NOT NULL DEFAULT 0,
+    image_url TEXT
   )`,
   `CREATE TABLE IF NOT EXISTS poll_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,6 +179,11 @@ async function migrate() {
   // whatever alias they had at the time — that becomes their permanent login handle.
   await db.execute("UPDATE users SET login_username = alias WHERE login_username IS NULL");
   await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_login_username ON users(login_username COLLATE NOCASE)");
+
+  const postColumns = (await db.execute("PRAGMA table_info(posts)")).rows.map((r) => r.name as string);
+  if (!postColumns.includes("image_url")) {
+    await db.execute(`ALTER TABLE posts ADD COLUMN image_url TEXT`);
+  }
 }
 
 export const dbReady: Promise<void> = globalThis.__rinconDbReady ?? migrate();

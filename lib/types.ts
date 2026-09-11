@@ -72,6 +72,7 @@ export interface DecoratedPost {
   title: string;
   excerpt: string;
   body: string;
+  imageUrl: string | null;
   votes: number;
   commentCount: number;
   voteValue: VoteValue;
