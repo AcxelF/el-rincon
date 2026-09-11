@@ -37,6 +37,7 @@ const SCHEMA_STATEMENTS = [
     badge TEXT,
     bio TEXT,
     alias_changed_at INTEGER,
+    login_username TEXT COLLATE NOCASE,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS sessions (
@@ -165,6 +166,13 @@ async function migrate() {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} INTEGER`);
     }
   }
+  if (!userColumns.includes("login_username")) {
+    await db.execute(`ALTER TABLE users ADD COLUMN login_username TEXT`);
+  }
+  // Existing accounts (and any row from before this migration ran) keep logging in with
+  // whatever alias they had at the time — that becomes their permanent login handle.
+  await db.execute("UPDATE users SET login_username = alias WHERE login_username IS NULL");
+  await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_login_username ON users(login_username COLLATE NOCASE)");
 }
 
 export const dbReady: Promise<void> = globalThis.__rinconDbReady ?? migrate();

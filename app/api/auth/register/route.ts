@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createSession,
   createUser,
-  findUserByAlias,
+  isAliasOrHandleTaken,
   isValidAlias,
   isValidPassword,
   normalizeAlias,
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (!isValidPassword(password)) {
     return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres." }, { status: 400 });
   }
-  if (await findUserByAlias(alias)) {
+  if (await isAliasOrHandleTaken(alias)) {
     return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
   }
 

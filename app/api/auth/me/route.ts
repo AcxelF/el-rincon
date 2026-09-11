@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  findUserByAlias,
   getAliasChangeCooldownRemaining,
   getUserFromRequest,
+  isAliasOrHandleTaken,
   isValidAlias,
   isValidBio,
   normalizeAlias,
@@ -44,8 +44,7 @@ export async function PATCH(request: NextRequest) {
           { status: 429 }
         );
       }
-      const existing = await findUserByAlias(alias);
-      if (existing && existing.id !== user.id) {
+      if (await isAliasOrHandleTaken(alias, user.id)) {
         return NextResponse.json({ error: "Ese nombre de usuario ya está en uso." }, { status: 409 });
       }
       await updateUserAlias(user.id, alias);

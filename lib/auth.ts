@@ -88,9 +88,39 @@ export async function findUserByAlias(alias: string): Promise<(AuthUser & { pass
   return row ? { ...toAuthUser(row), passwordHash: row.passwordHash } : undefined;
 }
 
+/**
+ * Login accepts either the account's permanent login handle (set once at registration,
+ * never changed) or its current public alias — so a rename never locks anyone out, and
+ * whatever name someone is used to typing keeps working.
+ */
+export async function findUserForLogin(input: string): Promise<(AuthUser & { passwordHash: string }) | undefined> {
+  const row = await getOne<UserRow & { passwordHash: string }>(
+    `SELECT ${USER_FIELDS}, password_hash as passwordHash FROM users WHERE login_username = ? COLLATE NOCASE OR alias = ? COLLATE NOCASE`,
+    [input, input]
+  );
+  return row ? { ...toAuthUser(row), passwordHash: row.passwordHash } : undefined;
+}
+
+/** Checks a candidate alias against every current alias AND every permanent login handle ever
+ * issued, so a freed-up display name can never collide with someone else's login handle. */
+export async function isAliasOrHandleTaken(candidate: string, excludeUserId?: string): Promise<boolean> {
+  const row = await getOne<{ id: string }>(
+    `SELECT id FROM users WHERE (alias = :candidate COLLATE NOCASE OR login_username = :candidate COLLATE NOCASE)
+     AND (:excludeUserId IS NULL OR id != :excludeUserId)`,
+    { candidate, excludeUserId: excludeUserId ?? null }
+  );
+  return !!row;
+}
+
 export async function createUser(alias: string, password: string, isAdmin = false): Promise<AuthUser> {
   const id = randomUUID();
-  await run("INSERT INTO users (id, alias, password_hash, is_admin) VALUES (?, ?, ?, ?)", [id, alias, hashPassword(password), isAdmin ? 1 : 0]);
+  await run("INSERT INTO users (id, alias, login_username, password_hash, is_admin) VALUES (?, ?, ?, ?, ?)", [
+    id,
+    alias,
+    alias,
+    hashPassword(password),
+    isAdmin ? 1 : 0,
+  ]);
   return { id, alias, isAdmin, isBanned: false, isMuted: false, bannedUntil: null, mutedUntil: null, badge: null, bio: null };
 }
 

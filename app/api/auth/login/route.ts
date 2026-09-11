@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSession, findUserByAlias, normalizeAlias, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS, verifyPassword } from "@/lib/auth";
+import { createSession, findUserForLogin, normalizeAlias, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS, verifyPassword } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const user = await findUserByAlias(alias);
+  const user = await findUserForLogin(alias);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Nombre de usuario o contraseña incorrectos." }, { status: 401 });
   }
