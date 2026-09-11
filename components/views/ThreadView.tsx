@@ -10,6 +10,7 @@ import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
 import ImageLightbox from "@/components/ImageLightbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ThreadView({
   post,
@@ -72,6 +73,7 @@ export default function ThreadView({
 }) {
   const replyRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const canPickBestAnswer = post.isQuestion && (isAdmin || post.author === myAlias);
 
   function replyToComment(author: string) {
@@ -97,7 +99,7 @@ export default function ThreadView({
             {post.reported ? "🚩 Reportado" : "🚩 Reportar"}
           </button>
           {(isAdmin || post.isMine) && (
-            <button className="btn btn-ghost" style={{ fontSize: 14, color: "var(--color-accent-2-700)" }} onClick={onDeletePost}>
+            <button className="btn btn-ghost" style={{ fontSize: 14, color: "var(--color-accent-2-700)" }} onClick={() => setConfirmingDelete(true)}>
               {post.isMine ? "🗑 Eliminar hilo" : "🗑 Eliminar hilo (admin)"}
             </button>
           )}
@@ -277,6 +279,16 @@ export default function ThreadView({
       ))}
 
       <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Eliminar publicación"
+        message="¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer."
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          onDeletePost();
+        }}
+      />
     </div>
   );
 }

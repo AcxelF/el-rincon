@@ -13,6 +13,7 @@ import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
 import ImageLightbox from "@/components/ImageLightbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const SORTS: SortMode[] = ["Recientes", "Populares"];
 const MAX_POLL_OPTIONS = 4;
@@ -145,6 +146,7 @@ export default function FeedView({
 }) {
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const draftBodyRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastSyncedDraftRef = useRef<string>(draft);
@@ -1048,7 +1050,7 @@ export default function FeedView({
                 <button
                   className="btn btn-ghost"
                   style={{ minHeight: 34, fontSize: 13, marginLeft: isAdmin ? undefined : "auto", color: "var(--color-accent-2-700)" }}
-                  onClick={() => onDeletePost(p.id)}
+                  onClick={() => setPendingDeleteId(p.id)}
                 >
                   {p.isMine ? "🗑 Eliminar" : "🗑 Eliminar (admin)"}
                 </button>
@@ -1059,6 +1061,16 @@ export default function FeedView({
       ))}
 
       <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar publicación"
+        message="¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer."
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId !== null) onDeletePost(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+      />
     </div>
   );
 }

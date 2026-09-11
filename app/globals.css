@@ -581,6 +581,24 @@ textarea.input {
   }
 }
 
+/* — confirm dialog: backdrop fades, card scales up softly from its center — */
+.confirm-backdrop {
+  transition: opacity 220ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+.confirm-card {
+  transform: scale(1);
+  transition: transform 220ms var(--ease-out), opacity 220ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
 /* — chat panel: grows from / shrinks back into the message button — */
 .chat-panel {
   transform-origin: bottom right;
@@ -677,6 +695,8 @@ textarea.input {
   .attach-menu,
   .lightbox-backdrop,
   .lightbox-image,
+  .confirm-backdrop,
+  .confirm-card,
   .auth-input,
   .auth-mode-slide,
   .chat-panel {
