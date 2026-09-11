@@ -492,20 +492,20 @@ export default function ElRinconApp({
     });
   }
 
-  async function publish(pollOptions?: string[], isQuestion?: boolean): Promise<boolean> {
+  async function publish(catId: string, pollOptions?: string[], isQuestion?: boolean): Promise<boolean> {
     if (!requireAuth()) return false;
     if (isMuted) return false;
     const text = draft.trim();
     if (!text) return false;
-    const targetCat = cat === "all" ? "Vida de campus" : cat;
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, cat: targetCat, pollOptions, isQuestion, anon }),
+      body: JSON.stringify({ text, cat: catId, pollOptions, isQuestion, anon }),
     });
     if (!res.ok) return false;
     setDraft("");
     setSort("Recientes");
+    setCat(catId);
     await refreshPosts();
     return true;
   }
@@ -786,7 +786,8 @@ export default function ElRinconApp({
             <FeedView
               draft={draft}
               onDraftChange={setDraft}
-              draftCatLabel={cat === "all" ? "Vida de campus" : categoryLabel(cat)}
+              categories={categories}
+              defaultCatId={cat === "all" ? "Vida de campus" : cat}
               postAsLabel={postAsLabel}
               isGuest={isGuest}
               anon={anon}
