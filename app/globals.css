@@ -267,6 +267,22 @@ textarea.input {
   border-radius: var(--radius-md);
 }
 
+/* — rich-text composer body: a contentEditable styled like textarea.input — */
+.rich-textarea {
+  min-height: 90px;
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  cursor: text;
+}
+.rich-textarea:empty::before {
+  content: attr(data-placeholder);
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  pointer-events: none;
+}
+
 /* — interactive chips / pills (sort, category, tabs, like, chat list) — */
 .chip-btn {
   transition: transform 140ms var(--ease-out), filter 140ms ease, box-shadow 140ms var(--ease-out);
