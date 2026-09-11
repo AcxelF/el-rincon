@@ -338,11 +338,11 @@ textarea.input {
   }
 }
 
-/* — custom badge effects (opt-in per-user, next to their alias) — */
-.badge-blink {
-  animation: badge-blink 1.1s ease-in-out infinite;
+/* — custom text effects (admin-only, opt-in on a rank badge or a username) — */
+.text-effect-blink {
+  animation: text-effect-blink 1.1s ease-in-out infinite;
 }
-@keyframes badge-blink {
+@keyframes text-effect-blink {
   0%, 100% {
     opacity: 1;
   }
@@ -350,16 +350,60 @@ textarea.input {
     opacity: 0.3;
   }
 }
-.badge-shift {
-  animation: badge-shift 4s linear infinite;
+.text-effect-shift {
+  animation: text-effect-shift 4s linear infinite;
 }
-@keyframes badge-shift {
+@keyframes text-effect-shift {
   0% {
     filter: hue-rotate(0deg);
   }
   100% {
     filter: hue-rotate(360deg);
   }
+}
+.text-effect-pulse {
+  display: inline-block;
+  animation: text-effect-pulse 1.4s ease-in-out infinite;
+}
+@keyframes text-effect-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+.text-effect-glow {
+  animation: text-effect-glow 1.8s ease-in-out infinite;
+}
+@keyframes text-effect-glow {
+  0%, 100% {
+    text-shadow: 0 0 4px currentColor;
+  }
+  50% {
+    text-shadow: 0 0 10px currentColor, 0 0 18px currentColor;
+  }
+}
+.text-effect-shake {
+  display: inline-block;
+  animation: text-effect-shake 0.5s ease-in-out infinite;
+}
+@keyframes text-effect-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-2px);
+  }
+  40%, 80% {
+    transform: translateX(2px);
+  }
+}
+.text-effect-outline {
+  -webkit-text-stroke: 0.6px currentColor;
+  paint-order: stroke fill;
 }
 
 /* — toasts — */
@@ -580,8 +624,11 @@ textarea.input {
     transition: none;
   }
   .notify-dot,
-  .badge-blink,
-  .badge-shift {
+  .text-effect-blink,
+  .text-effect-shift,
+  .text-effect-pulse,
+  .text-effect-glow,
+  .text-effect-shake {
     animation: none;
   }
   .auth-input:focus {

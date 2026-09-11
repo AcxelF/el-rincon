@@ -117,7 +117,11 @@ export default function ThreadView({
           {post.isQuestion && <span className="tag tag-accent">❓ Pregunta</span>}
           {post.isQuestion && post.bestAnswerId != null && <span className="tag tag-accent-2">✓ Resuelta</span>}
           <span className="tag tag-accent-2">{post.cat}</span>
-          <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(post.author)}>
+          <span
+            className={["alias-link", badges[post.author]?.nameEffect ? `text-effect-${badges[post.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
+            style={{ fontWeight: 600, color: "var(--color-text)" }}
+            onClick={() => onViewProfile(post.author)}
+          >
             {post.author}
           </span>
           <Badge
@@ -212,7 +216,11 @@ export default function ThreadView({
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
               {c.isBestAnswer && <span className="tag tag-accent-2">✓ Mejor respuesta</span>}
-              <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(c.author)}>
+              <span
+                className={["alias-link", badges[c.author]?.nameEffect ? `text-effect-${badges[c.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
+                style={{ fontWeight: 600, color: "var(--color-text)" }}
+                onClick={() => onViewProfile(c.author)}
+              >
                 {c.author}
               </span>
               <Badge

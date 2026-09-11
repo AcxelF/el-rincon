@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import { BADGE_PRESETS } from "@/lib/badges";
+import type { TextEffect } from "@/lib/types";
 import Badge from "@/components/Badge";
 
-const EFFECTS: { value: "" | "blink" | "shift"; label: string }[] = [
+const EFFECTS: { value: "" | TextEffect; label: string }[] = [
   { value: "", label: "Sin efecto" },
   { value: "blink", label: "Parpadeante" },
   { value: "shift", label: "Cambio de color suave" },
+  { value: "pulse", label: "Pulso" },
+  { value: "glow", label: "Brillo neón" },
+  { value: "shake", label: "Sacudida" },
+  { value: "outline", label: "Contorno" },
 ];
 
 export default function BadgeStyleEditor({
@@ -17,6 +22,7 @@ export default function BadgeStyleEditor({
   currentColor,
   currentTextColor,
   currentEffect,
+  currentNameEffect,
   onToast,
   onBadgeChanged,
 }: {
@@ -25,14 +31,16 @@ export default function BadgeStyleEditor({
   currentBadge?: string;
   currentColor?: string | null;
   currentTextColor?: string | null;
-  currentEffect?: "blink" | "shift" | null;
+  currentEffect?: TextEffect | null;
+  currentNameEffect?: TextEffect | null;
   onToast: (message: string) => void;
   onBadgeChanged: () => void;
 }) {
   const [badgeDraft, setBadgeDraft] = useState(currentBadge ?? "");
   const [color, setColor] = useState(currentColor || "#1f5ad6");
   const [textColor, setTextColor] = useState(currentTextColor || "#ffffff");
-  const [effect, setEffect] = useState<"" | "blink" | "shift">(currentEffect ?? "");
+  const [effect, setEffect] = useState<"" | TextEffect>(currentEffect ?? "");
+  const [nameEffect, setNameEffect] = useState<"" | TextEffect>(currentNameEffect ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -73,6 +81,27 @@ export default function BadgeStyleEditor({
       }
       onBadgeChanged();
       onToast("Estilo de rango actualizado");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveNameEffect() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/profile/badge-style", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nameEffect: nameEffect || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "No se pudo guardar.");
+        return;
+      }
+      onBadgeChanged();
+      onToast("Efecto de nombre de usuario actualizado");
     } finally {
       setBusy(false);
     }
@@ -172,7 +201,7 @@ export default function BadgeStyleEditor({
             <select
               className="input"
               value={effect}
-              onChange={(e) => setEffect(e.target.value as "" | "blink" | "shift")}
+              onChange={(e) => setEffect(e.target.value as "" | TextEffect)}
               style={{ width: 190, minHeight: 32, fontSize: 12.5, background: "var(--color-neutral-100)" }}
             >
               {EFFECTS.map((o) => (
@@ -184,6 +213,39 @@ export default function BadgeStyleEditor({
           )}
           <button type="button" className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busy} onClick={saveStyle}>
             Guardar estilo
+          </button>
+        </div>
+      )}
+
+      {isAdmin && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 4, borderTop: "1px solid var(--color-divider)" }}>
+          <span
+            style={{
+              fontSize: 11,
+              letterSpacing: ".12em",
+              textTransform: "uppercase",
+              color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+            }}
+          >
+            Tu nombre de usuario
+          </span>
+          <span className={nameEffect ? `text-effect-${nameEffect}` : ""} style={{ fontWeight: 600 }}>
+            {alias}
+          </span>
+          <select
+            className="input"
+            value={nameEffect}
+            onChange={(e) => setNameEffect(e.target.value as "" | TextEffect)}
+            style={{ width: 190, minHeight: 32, fontSize: 12.5, background: "var(--color-neutral-100)" }}
+          >
+            {EFFECTS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busy} onClick={saveNameEffect}>
+            Guardar efecto
           </button>
         </div>
       )}

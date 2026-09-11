@@ -893,10 +893,11 @@ export default function ElRinconApp({
               }}
               onToast={pushToast}
               onBadgeChanged={refreshBadges}
-              badge={badges[profileAlias]?.label}
+              badge={badges[profileAlias]?.label ?? undefined}
               badgeColor={badges[profileAlias]?.color ?? null}
               badgeTextColor={badges[profileAlias]?.textColor ?? null}
               badgeEffect={badges[profileAlias]?.effect ?? null}
+              nameEffect={badges[profileAlias]?.nameEffect ?? null}
               bio={bios[profileAlias]}
               followers={followInfo?.followers ?? 0}
               following={followInfo?.following ?? 0}

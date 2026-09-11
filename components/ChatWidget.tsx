@@ -263,7 +263,7 @@ export default function ChatWidget({
             <div style={avatarForAlias(chat.alias, 32)}>{initials(chat.alias)}</div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                {chat.alias}
+                <span className={badges[chat.alias]?.nameEffect ? `text-effect-${badges[chat.alias]?.nameEffect}` : ""}>{chat.alias}</span>
                 <Badge
                   label={badges[chat.alias]?.label}
                   color={badges[chat.alias]?.color}

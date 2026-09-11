@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DecoratedPost } from "@/lib/types";
+import type { DecoratedPost, TextEffect } from "@/lib/types";
 import { formatKarma } from "@/lib/mock-data";
 import { stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
@@ -27,6 +27,7 @@ export default function ProfileView({
   badgeColor,
   badgeTextColor,
   badgeEffect,
+  nameEffect,
   bio,
   followers,
   following,
@@ -53,7 +54,8 @@ export default function ProfileView({
   badge?: string;
   badgeColor?: string | null;
   badgeTextColor?: string | null;
-  badgeEffect?: "blink" | "shift" | null;
+  badgeEffect?: TextEffect | null;
+  nameEffect?: TextEffect | null;
   bio?: string;
   followers: number;
   following: number;
@@ -159,7 +161,7 @@ export default function ProfileView({
             </div>
           ) : (
             <h1 style={{ margin: "0 0 4px", fontSize: 30, lineHeight: 1.1, color: "var(--color-accent-900)", display: "flex", alignItems: "center", gap: 10 }}>
-              {alias}
+              <span className={nameEffect ? `text-effect-${nameEffect}` : ""}>{alias}</span>
               <Badge label={badge} color={badgeColor} textColor={badgeTextColor} effect={badgeEffect} />
             </h1>
           )}
@@ -239,6 +241,7 @@ export default function ProfileView({
           currentColor={badgeColor}
           currentTextColor={badgeTextColor}
           currentEffect={badgeEffect}
+          currentNameEffect={nameEffect}
           onToast={onToast}
           onBadgeChanged={onBadgeChanged}
         />

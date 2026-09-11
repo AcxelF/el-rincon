@@ -2,7 +2,12 @@ import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
 import { run, getOne, getAll } from "./db";
-import type { BadgeInfo } from "./types";
+import type { BadgeInfo, TextEffect } from "./types";
+
+const TEXT_EFFECTS: readonly TextEffect[] = ["blink", "shift", "pulse", "glow", "shake", "outline"];
+function toTextEffect(value: string | null): TextEffect | null {
+  return TEXT_EFFECTS.includes(value as TextEffect) ? (value as TextEffect) : null;
+}
 
 export const SESSION_COOKIE_NAME = "rincon_session";
 const SESSION_DAYS = 30;
@@ -249,35 +254,63 @@ export async function setUserBadge(alias: string, badge: string | null): Promise
 }
 
 export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
-  const rows = await getAll<{ alias: string; badge: string; badgeColor: string | null; badgeTextColor: string | null; badgeEffect: string | null }>(
-    "SELECT alias, badge, badge_color as badgeColor, badge_text_color as badgeTextColor, badge_effect as badgeEffect FROM users WHERE badge IS NOT NULL AND badge != ''"
+  const rows = await getAll<{
+    alias: string;
+    badge: string | null;
+    badgeColor: string | null;
+    badgeTextColor: string | null;
+    badgeEffect: string | null;
+    nameEffect: string | null;
+  }>(
+    `SELECT alias, badge, badge_color as badgeColor, badge_text_color as badgeTextColor, badge_effect as badgeEffect, name_effect as nameEffect
+     FROM users WHERE (badge IS NOT NULL AND badge != '') OR name_effect IS NOT NULL`
   );
   const map: Record<string, BadgeInfo> = {};
   for (const r of rows) {
     map[r.alias] = {
-      label: r.badge,
+      label: r.badge || null,
       color: r.badgeColor,
       textColor: r.badgeTextColor,
-      effect: r.badgeEffect === "blink" || r.badgeEffect === "shift" ? r.badgeEffect : null,
+      effect: toTextEffect(r.badgeEffect),
+      nameEffect: toTextEffect(r.nameEffect),
     };
   }
   return map;
 }
 
 /** A rank's colors are a personal touch the owner picks for themselves — separate from the
- * rank text itself, which only an admin can assign. The animated effect is admin-only: pass
- * `effect` as undefined to leave it untouched (used when a non-admin saves their colors). */
+ * rank text itself, which only an admin can assign. The animated effects (badge effect and
+ * username effect) are admin-only. Every field is optional and only touches its own column
+ * when provided, so a caller can update just one thing (e.g. only `nameEffect`) without
+ * wiping the others. */
 export async function setUserBadgeStyle(
   userId: string,
-  color: string | null,
-  textColor: string | null,
-  effect?: "blink" | "shift" | null
+  color?: string | null,
+  textColor?: string | null,
+  effect?: TextEffect | null,
+  nameEffect?: TextEffect | null
 ) {
-  if (effect === undefined) {
-    await run("UPDATE users SET badge_color = ?, badge_text_color = ? WHERE id = ?", [color, textColor, userId]);
-  } else {
-    await run("UPDATE users SET badge_color = ?, badge_text_color = ?, badge_effect = ? WHERE id = ?", [color, textColor, effect, userId]);
+  const sets: string[] = [];
+  const args: (string | null)[] = [];
+  if (color !== undefined) {
+    sets.push("badge_color = ?");
+    args.push(color);
   }
+  if (textColor !== undefined) {
+    sets.push("badge_text_color = ?");
+    args.push(textColor);
+  }
+  if (effect !== undefined) {
+    sets.push("badge_effect = ?");
+    args.push(effect);
+  }
+  if (nameEffect !== undefined) {
+    sets.push("name_effect = ?");
+    args.push(nameEffect);
+  }
+  if (sets.length === 0) return;
+  args.push(userId);
+  await run(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`, args);
 }
 
 export interface FollowStats {

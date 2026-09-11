@@ -879,7 +879,11 @@ export default function FeedView({
               {p.isQuestion && <span className="tag tag-accent">❓ Pregunta</span>}
               {p.isQuestion && p.bestAnswerId != null && <span className="tag tag-accent-2">✓ Resuelta</span>}
               <span className="tag tag-accent-2">{p.cat}</span>
-              <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(p.author)}>
+              <span
+                className={["alias-link", badges[p.author]?.nameEffect ? `text-effect-${badges[p.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
+                style={{ fontWeight: 600, color: "var(--color-text)" }}
+                onClick={() => onViewProfile(p.author)}
+              >
                 {p.author}
               </span>
               <Badge
