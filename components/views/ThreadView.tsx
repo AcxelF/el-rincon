@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { BadgeInfo, DecoratedComment, DecoratedPost } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, soft, softOn } from "@/lib/style-helpers";
 import { renderFormattedText, stripFormatMarkers } from "@/lib/format-text";
@@ -9,6 +9,7 @@ import NameText from "@/components/NameText";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
+import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ThreadView({
   post,
@@ -70,6 +71,7 @@ export default function ThreadView({
   onMarkBestAnswer: (commentId: number) => void;
 }) {
   const replyRef = useRef<HTMLTextAreaElement>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const canPickBestAnswer = post.isQuestion && (isAdmin || post.author === myAlias);
 
   function replyToComment(author: string) {
@@ -142,7 +144,8 @@ export default function ThreadView({
           <img
             src={post.imageUrl}
             alt=""
-            style={{ width: "100%", maxHeight: 560, objectFit: "cover", borderRadius: "var(--radius-lg)", display: "block" }}
+            onClick={() => setLightboxUrl(post.imageUrl)}
+            style={{ width: "100%", maxHeight: 560, objectFit: "cover", borderRadius: "var(--radius-lg)", display: "block", cursor: "pointer" }}
           />
         )}
         {post.poll && (
@@ -272,6 +275,8 @@ export default function ThreadView({
           </div>
         </div>
       ))}
+
+      <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />
     </div>
   );
 }

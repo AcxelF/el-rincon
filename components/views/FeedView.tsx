@@ -12,6 +12,7 @@ import NameText from "@/components/NameText";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
+import ImageLightbox from "@/components/ImageLightbox";
 
 const SORTS: SortMode[] = ["Recientes", "Populares"];
 const MAX_POLL_OPTIONS = 4;
@@ -143,6 +144,7 @@ export default function FeedView({
   onToggleFollow: (alias: string) => void;
 }) {
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const draftBodyRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastSyncedDraftRef = useRef<string>(draft);
@@ -1001,7 +1003,10 @@ export default function FeedView({
                 src={p.imageUrl}
                 alt=""
                 loading="lazy"
-                onClick={() => onOpenPost(p.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxUrl(p.imageUrl);
+                }}
                 style={{
                   width: "100%",
                   maxHeight: 420,
@@ -1052,6 +1057,8 @@ export default function FeedView({
           </div>
         </article>
       ))}
+
+      <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />
     </div>
   );
 }
