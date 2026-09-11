@@ -581,7 +581,9 @@ export default function FeedView({
             <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, cursor: "pointer" }} onClick={() => onOpenPost(p.id)}>
               {p.title}
             </h2>
-            <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>{p.excerpt}</p>
+            {p.excerpt !== p.title && (
+              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>{p.excerpt}</p>
+            )}
             {p.poll && <Poll poll={p.poll} onVote={(optionId) => onVotePoll(p.id, optionId)} />}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
               <button className="btn btn-secondary" style={{ minHeight: 34, fontSize: 13 }} onClick={() => onOpenPost(p.id)}>

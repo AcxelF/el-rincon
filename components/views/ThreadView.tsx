@@ -126,7 +126,9 @@ export default function ThreadView({
           <span>· {post.time}</span>
         </div>
         <h1 style={{ margin: 0, fontSize: 32, lineHeight: 1.12 }}>{post.title}</h1>
-        <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>{post.body}</p>
+        {post.body !== post.title && (
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>{post.body}</p>
+        )}
         {post.poll && (
           <div style={{ maxWidth: 420 }}>
             <Poll poll={post.poll} onVote={onVotePoll} />
