@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, MagnifyingGlass, Plus } from "@phosphor-icons/react";
-import type { Chat, ChatMessage } from "@/lib/types";
+import type { BadgeInfo, Chat, ChatMessage } from "@/lib/types";
 import { avatarForAlias, bubbleRowStyle, bubbleStyle, chatDotStyle, initials } from "@/lib/style-helpers";
 import Badge from "@/components/Badge";
 
@@ -29,7 +29,7 @@ export default function ChatWidget({
   onDmDraftChange: (v: string) => void;
   onDmKey: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onSendDm: () => void;
-  badges: Record<string, string>;
+  badges: Record<string, BadgeInfo>;
 }) {
   const chat = chats.find((c) => c.id === activeChatId) || chats[0];
   const msgsEndRef = useRef<HTMLDivElement>(null);
@@ -264,7 +264,7 @@ export default function ChatWidget({
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                 {chat.alias}
-                <Badge label={badges[chat.alias]} />
+                <Badge label={badges[chat.alias]?.label} color={badges[chat.alias]?.color} effect={badges[chat.alias]?.effect} />
               </div>
               <div style={{ fontSize: 11, color: "var(--color-accent-2-700)" }}>{chat.status}</div>
             </div>

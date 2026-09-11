@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CaretDown, ChartBar, Check, Paperclip, Question, X } from "@phosphor-icons/react";
-import type { Category, DecoratedPost, SortMode } from "@/lib/types";
+import type { BadgeInfo, Category, DecoratedPost, SortMode } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
 import { iconForCategory } from "@/lib/category-icons";
 import { elementToMarkdown, markdownToHtml, renderFormattedText, stripFormatMarkers } from "@/lib/format-text";
@@ -125,7 +125,7 @@ export default function FeedView({
   onReportPost: (id: number) => void;
   onVotePoll: (postId: number, optionId: number) => void;
   onViewProfile: (alias: string) => void;
-  badges: Record<string, string>;
+  badges: Record<string, BadgeInfo>;
   isMuted: boolean;
   myAlias: string;
   followingSet: Set<string>;
@@ -882,7 +882,7 @@ export default function FeedView({
               <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(p.author)}>
                 {p.author}
               </span>
-              <Badge label={badges[p.author]} />
+              <Badge label={badges[p.author]?.label} color={badges[p.author]?.color} effect={badges[p.author]?.effect} />
               {p.author !== myAlias && (
                 <FollowButton compact isFollowing={followingSet.has(p.author)} onToggle={() => onToggleFollow(p.author)} />
               )}

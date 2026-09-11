@@ -38,6 +38,8 @@ const SCHEMA_STATEMENTS = [
     bio TEXT,
     alias_changed_at INTEGER,
     login_username TEXT COLLATE NOCASE,
+    badge_color TEXT,
+    badge_effect TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS sessions (
@@ -156,7 +158,7 @@ async function migrate() {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`);
     }
   }
-  for (const column of ["badge", "bio"]) {
+  for (const column of ["badge", "bio", "badge_color", "badge_effect"]) {
     if (!userColumns.includes(column)) {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
     }

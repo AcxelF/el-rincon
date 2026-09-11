@@ -1,4 +1,5 @@
 export const BADGE_PRESETS = [
+  { label: "Admin", icon: "🎖️" },
   { label: "Moderador", icon: "🛡️" },
   { label: "Verificado", icon: "✅" },
   { label: "Colaborador", icon: "🤝" },

@@ -22,6 +22,12 @@ export interface Category {
   group?: "tema" | "carrera";
 }
 
+export interface BadgeInfo {
+  label: string;
+  color: string | null;
+  effect: "blink" | "shift" | null;
+}
+
 export interface RankingUser {
   alias: string;
   meta: string;

@@ -14,7 +14,7 @@ import ToastStack, { type ToastItem } from "@/components/ToastStack";
 import BottomNav from "@/components/BottomNav";
 import { CATEGORIES } from "@/lib/mock-data";
 import { initials } from "@/lib/style-helpers";
-import type { AppNotification, Category, Chat, DecoratedPost, RankingUser, Report, SortMode, View } from "@/lib/types";
+import type { AppNotification, BadgeInfo, Category, Chat, DecoratedPost, RankingUser, Report, SortMode, View } from "@/lib/types";
 
 const THEME_KEY = "rincon-theme";
 const FOLLOWED_CATEGORIES_KEY = "rincon-followed-categories";
@@ -65,7 +65,7 @@ export default function ElRinconApp({
   const activeChatId = chatId ?? chats[0]?.id ?? null;
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
   const [reports, setReports] = useState<Report[]>([]);
-  const [badges, setBadges] = useState<Record<string, string>>({});
+  const [badges, setBadges] = useState<Record<string, BadgeInfo>>({});
   const [bios, setBios] = useState<Record<string, string>>({});
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [followInfo, setFollowInfo] = useState<{ followers: number; following: number; isFollowing: boolean } | null>(null);
@@ -893,7 +893,9 @@ export default function ElRinconApp({
               }}
               onToast={pushToast}
               onBadgeChanged={refreshBadges}
-              badge={badges[profileAlias]}
+              badge={badges[profileAlias]?.label}
+              badgeColor={badges[profileAlias]?.color ?? null}
+              badgeEffect={badges[profileAlias]?.effect ?? null}
               bio={bios[profileAlias]}
               followers={followInfo?.followers ?? 0}
               following={followInfo?.following ?? 0}

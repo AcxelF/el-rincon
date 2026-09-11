@@ -6,6 +6,7 @@ import { formatKarma } from "@/lib/mock-data";
 import { stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
 import AdminUserActions from "@/components/AdminUserActions";
+import BadgeStyleEditor from "@/components/BadgeStyleEditor";
 import FollowButton from "@/components/FollowButton";
 
 export default function ProfileView({
@@ -23,6 +24,8 @@ export default function ProfileView({
   onToast,
   onBadgeChanged,
   badge,
+  badgeColor,
+  badgeEffect,
   bio,
   followers,
   following,
@@ -47,6 +50,8 @@ export default function ProfileView({
   onToast: (message: string) => void;
   onBadgeChanged: () => void;
   badge?: string;
+  badgeColor?: string | null;
+  badgeEffect?: "blink" | "shift" | null;
   bio?: string;
   followers: number;
   following: number;
@@ -153,7 +158,7 @@ export default function ProfileView({
           ) : (
             <h1 style={{ margin: "0 0 4px", fontSize: 30, lineHeight: 1.1, color: "var(--color-accent-900)", display: "flex", alignItems: "center", gap: 10 }}>
               {alias}
-              <Badge label={badge} />
+              <Badge label={badge} color={badgeColor} effect={badgeEffect} />
             </h1>
           )}
           <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-accent-900) 70%, transparent)" }}>
@@ -223,6 +228,18 @@ export default function ProfileView({
       </div>
 
       {isAdmin && !isSelf && <AdminUserActions alias={alias} onToast={onToast} onBadgeChanged={onBadgeChanged} />}
+
+      {isSelf && (isAdmin || badge) && (
+        <BadgeStyleEditor
+          alias={alias}
+          isAdmin={isAdmin}
+          currentBadge={badge}
+          currentColor={badgeColor}
+          currentEffect={badgeEffect}
+          onToast={onToast}
+          onBadgeChanged={onBadgeChanged}
+        />
+      )}
 
       {isSelf && (
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

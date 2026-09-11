@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
 import { run, getOne, getAll } from "./db";
+import type { BadgeInfo } from "./types";
 
 export const SESSION_COOKIE_NAME = "rincon_session";
 const SESSION_DAYS = 30;
@@ -247,11 +248,25 @@ export async function setUserBadge(alias: string, badge: string | null): Promise
   };
 }
 
-export async function getBadgeMap(): Promise<Record<string, string>> {
-  const rows = await getAll<{ alias: string; badge: string }>("SELECT alias, badge FROM users WHERE badge IS NOT NULL AND badge != ''");
-  const map: Record<string, string> = {};
-  for (const r of rows) map[r.alias] = r.badge;
+export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
+  const rows = await getAll<{ alias: string; badge: string; badgeColor: string | null; badgeEffect: string | null }>(
+    "SELECT alias, badge, badge_color as badgeColor, badge_effect as badgeEffect FROM users WHERE badge IS NOT NULL AND badge != ''"
+  );
+  const map: Record<string, BadgeInfo> = {};
+  for (const r of rows) {
+    map[r.alias] = {
+      label: r.badge,
+      color: r.badgeColor,
+      effect: r.badgeEffect === "blink" || r.badgeEffect === "shift" ? r.badgeEffect : null,
+    };
+  }
   return map;
+}
+
+/** A badge's color/animation is a personal touch the owner picks for themselves — separate
+ * from the badge text itself, which only an admin can assign. */
+export async function setUserBadgeStyle(userId: string, color: string | null, effect: "blink" | "shift" | null) {
+  await run("UPDATE users SET badge_color = ?, badge_effect = ? WHERE id = ?", [color, effect, userId]);
 }
 
 export interface FollowStats {
