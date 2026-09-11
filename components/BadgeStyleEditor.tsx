@@ -15,6 +15,10 @@ const EFFECTS: { value: "" | TextEffect; label: string }[] = [
   { value: "shake", label: "Sacudida" },
   { value: "outline", label: "Contorno" },
   { value: "rainbow", label: "Arcoíris (letra por letra)" },
+  { value: "wavy", label: "Onda" },
+  { value: "jump", label: "Salto secuencial" },
+  { value: "spin", label: "Giro secuencial" },
+  { value: "gradient", label: "Degradado" },
 ];
 
 export default function BadgeStyleEditor({

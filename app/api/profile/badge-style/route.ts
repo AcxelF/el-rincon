@@ -3,7 +3,19 @@ import { getUserFromRequest, setUserBadgeStyle } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { TextEffect } from "@/lib/types";
 
-const VALID_EFFECTS = new Set<string>(["blink", "shift", "pulse", "glow", "shake", "outline", "rainbow"]);
+const VALID_EFFECTS = new Set<string>([
+  "blink",
+  "shift",
+  "pulse",
+  "glow",
+  "shake",
+  "outline",
+  "rainbow",
+  "wavy",
+  "jump",
+  "spin",
+  "gradient",
+]);
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 function asEffect(raw: string | null): TextEffect | null {

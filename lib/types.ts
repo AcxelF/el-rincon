@@ -22,7 +22,18 @@ export interface Category {
   group?: "tema" | "carrera";
 }
 
-export type TextEffect = "blink" | "shift" | "pulse" | "glow" | "shake" | "outline" | "rainbow";
+export type TextEffect =
+  | "blink"
+  | "shift"
+  | "pulse"
+  | "glow"
+  | "shake"
+  | "outline"
+  | "rainbow"
+  | "wavy"
+  | "jump"
+  | "spin"
+  | "gradient";
 
 export interface BadgeInfo {
   label: string | null;

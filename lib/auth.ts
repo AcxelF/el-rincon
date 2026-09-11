@@ -4,7 +4,19 @@ import type { NextRequest } from "next/server";
 import { run, getOne, getAll } from "./db";
 import type { BadgeInfo, TextEffect } from "./types";
 
-const TEXT_EFFECTS: readonly TextEffect[] = ["blink", "shift", "pulse", "glow", "shake", "outline", "rainbow"];
+const TEXT_EFFECTS: readonly TextEffect[] = [
+  "blink",
+  "shift",
+  "pulse",
+  "glow",
+  "shake",
+  "outline",
+  "rainbow",
+  "wavy",
+  "jump",
+  "spin",
+  "gradient",
+];
 function toTextEffect(value: string | null): TextEffect | null {
   return TEXT_EFFECTS.includes(value as TextEffect) ? (value as TextEffect) : null;
 }

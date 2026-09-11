@@ -405,6 +405,45 @@ textarea.input {
   -webkit-text-stroke: 0.6px currentColor;
   paint-order: stroke fill;
 }
+.text-effect-wavy {
+  display: inline-block;
+  animation: text-effect-wavy 1s ease-in-out infinite;
+}
+@keyframes text-effect-wavy {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.text-effect-jump {
+  display: inline-block;
+  animation: text-effect-jump 0.9s ease-in-out infinite;
+}
+@keyframes text-effect-jump {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+}
+.text-effect-spin {
+  display: inline-block;
+  animation: text-effect-spin 1.2s linear infinite;
+}
+@keyframes text-effect-spin {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
 
 /* — toasts — */
 .toast-item {
@@ -628,7 +667,10 @@ textarea.input {
   .text-effect-shift,
   .text-effect-pulse,
   .text-effect-glow,
-  .text-effect-shake {
+  .text-effect-shake,
+  .text-effect-wavy,
+  .text-effect-jump,
+  .text-effect-spin {
     animation: none;
   }
   .auth-input:focus {
