@@ -452,17 +452,33 @@ export default function ElRinconApp({
 
   async function toggleLike(id: number) {
     if (!requireAuth()) return;
+    const current = posts.find((p) => p.id === id) ?? (openPost?.id === id ? openPost : undefined);
+    if (!current) return;
+    const optimistic = { liked: !current.liked, likes: current.likes + (current.liked ? -1 : 1) };
+
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...optimistic } : p)));
+    if (openPost?.id === id) setOpenPost((prev) => (prev ? { ...prev, ...optimistic } : prev));
+
     const res = await fetch(`/api/posts/${id}/like`, { method: "POST" });
-    if (!res.ok) return;
-    await refreshPosts();
-    if (view === "thread" && openId === id) await refreshThread(id);
+    if (!res.ok) {
+      const revert = { liked: current.liked, likes: current.likes };
+      setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...revert } : p)));
+      if (openPost?.id === id) setOpenPost((prev) => (prev ? { ...prev, ...revert } : prev));
+    }
   }
 
   async function toggleCommentLike(commentId: number) {
     if (!requireAuth()) return;
+    const current = threadComments.find((c) => c.id === commentId);
+    if (!current) return;
+    const optimistic = { liked: !current.liked, likes: current.likes + (current.liked ? -1 : 1) };
+
+    setThreadComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, ...optimistic } : c)));
+
     const res = await fetch(`/api/comments/${commentId}/like`, { method: "POST" });
-    if (!res.ok) return;
-    if (view === "thread" && openId != null) await refreshThread(openId);
+    if (!res.ok) {
+      setThreadComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, liked: current.liked, likes: current.likes } : c)));
+    }
   }
 
   async function votePoll(postId: number, optionId: number) {
