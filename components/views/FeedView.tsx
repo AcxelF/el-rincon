@@ -398,6 +398,16 @@ export default function FeedView({
               disabled={isMuted}
               maxLength={120}
             />
+            <textarea
+              ref={draftBodyRef}
+              className="input"
+              placeholder={isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "¿Qué quieres compartir?"}
+              style={{ background: "var(--color-neutral-100)", minHeight: 74, fontSize: 15 }}
+              value={draft}
+              onChange={(e) => onDraftChange(e.target.value)}
+              disabled={isMuted}
+              maxLength={2000}
+            />
             <div style={{ display: "flex", gap: 4 }}>
               <button
                 type="button"
@@ -440,16 +450,6 @@ export default function FeedView({
                 K
               </button>
             </div>
-            <textarea
-              ref={draftBodyRef}
-              className="input"
-              placeholder={isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "¿Qué quieres compartir?"}
-              style={{ background: "var(--color-neutral-100)", minHeight: 74, fontSize: 15 }}
-              value={draft}
-              onChange={(e) => onDraftChange(e.target.value)}
-              disabled={isMuted}
-              maxLength={2000}
-            />
 
             {pollEnabled && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
