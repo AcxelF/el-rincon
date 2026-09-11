@@ -10,6 +10,7 @@ export const CATEGORIES: Category[] = [
   { id: "Comida", name: "Comida y cafeterías", emoji: "🍟", group: "tema" },
   { id: "Tablón", name: "Compra-venta y roomies", emoji: "📌", group: "tema" },
   { id: "Confesiones", name: "Confesiones", emoji: "🤫", group: "tema" },
+  { id: "Chisme", name: "Chisme", emoji: "👀", group: "tema" },
   { id: "Clubes", name: "Clubes y sociedades", emoji: "🎭", group: "tema" },
   { id: "PFADM", name: "Administración de Empresas", emoji: "💼", group: "carrera" },
   { id: "PFANI", name: "Administración de Negocios Internacionales", emoji: "🌐", group: "carrera" },

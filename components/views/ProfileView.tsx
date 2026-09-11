@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { DecoratedPost } from "@/lib/types";
 import { formatKarma } from "@/lib/mock-data";
-import { renderFormattedText } from "@/lib/format-text";
+import { stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
 import AdminUserActions from "@/components/AdminUserActions";
 import FollowButton from "@/components/FollowButton";
@@ -258,7 +258,7 @@ export default function ProfileView({
             >
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, color: "var(--color-accent-700)", width: 44 }}>{p.votes}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.25 }}>{renderFormattedText(p.title)}</div>
+                <div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.25 }}>{stripFormatMarkers(p.title)}</div>
                 <div style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                   {p.cat} · {p.commentCount} comentarios
                 </div>

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, ChartBar, Check, Paperclip, Question } from "@phosphor-icons/react";
+import { CaretDown, ChartBar, Check, Paperclip, Question, X } from "@phosphor-icons/react";
 import type { Category, DecoratedPost, SortMode } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
 import { iconForCategory } from "@/lib/category-icons";
-import { renderFormattedText } from "@/lib/format-text";
+import { renderFormattedText, stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
@@ -119,6 +119,9 @@ export default function FeedView({
 }) {
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
   const draftBodyRef = useRef<HTMLTextAreaElement>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [boldOn, setBoldOn] = useState(false);
+  const [italicOn, setItalicOn] = useState(false);
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [questionEnabled, setQuestionEnabled] = useState(false);
@@ -138,6 +141,15 @@ export default function FeedView({
     setPrevDefaultCatId(defaultCatId);
     if (!catManuallyPicked) setComposeCat(defaultCatId);
   }
+
+  useEffect(() => {
+    if (!composerOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setComposerOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [composerOpen]);
 
   useEffect(() => {
     if (!attachMenuOpen) return;
@@ -221,16 +233,31 @@ export default function FeedView({
     const marker = kind === "bold" ? "**" : "*";
     const start = el.selectionStart ?? draft.length;
     const end = el.selectionEnd ?? draft.length;
-    const selected = draft.slice(start, end);
-    const placeholder = selected || (kind === "bold" ? "negrita" : "cursiva");
-    const next = draft.slice(0, start) + marker + placeholder + marker + draft.slice(end);
+
+    if (start !== end) {
+      // Text already selected: wrap it right away, no need to toggle a "mode".
+      const selected = draft.slice(start, end);
+      const next = draft.slice(0, start) + marker + selected + marker + draft.slice(end);
+      onDraftChange(next);
+      const selectFrom = start + marker.length;
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(selectFrom, selectFrom + selected.length);
+      });
+      return;
+    }
+
+    // Nothing selected: drop a marker at the cursor and flip the toggle — everything
+    // typed next is bold/italic until the button is pressed again to close it.
+    const next = draft.slice(0, start) + marker + draft.slice(start);
     onDraftChange(next);
-    const selectFrom = start + marker.length;
-    const selectTo = selectFrom + placeholder.length;
+    const cursor = start + marker.length;
     requestAnimationFrame(() => {
       el.focus();
-      el.setSelectionRange(selectFrom, selectTo);
+      el.setSelectionRange(cursor, cursor);
     });
+    if (kind === "bold") setBoldOn((b) => !b);
+    else setItalicOn((i) => !i);
   }
 
   async function handleShare(post: DecoratedPost) {
@@ -263,6 +290,9 @@ export default function FeedView({
       setPollOptions(["", ""]);
       setQuestionEnabled(false);
       setCatManuallyPicked(false);
+      setBoldOn(false);
+      setItalicOn(false);
+      setComposerOpen(false);
     }
   }
 
@@ -271,12 +301,96 @@ export default function FeedView({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ padding: "20px 22px", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
+      <button
+        type="button"
+        onClick={() => !isMuted && setComposerOpen(true)}
+        disabled={isMuted}
+        style={{
+          display: "flex",
+          gap: 14,
+          alignItems: "center",
+          width: "100%",
+          padding: "16px 22px",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--color-surface)",
+          boxShadow: "var(--shadow-sm)",
+          border: 0,
+          cursor: isMuted ? "default" : "pointer",
+          textAlign: "left",
+          fontFamily: "inherit",
+        }}
+      >
+        <div style={avatarStyle("accent-300", "accent-900", 40)}>{myInitials}</div>
+        <span
+          className="input"
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            background: "var(--color-neutral-100)",
+            fontSize: 15,
+            color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+          }}
+        >
+          {isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "¿Qué quieres compartir?"}
+        </span>
+      </button>
+
+      {composerOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "grid",
+            placeItems: "center",
+            background: "rgba(10, 14, 24, 0.6)",
+            padding: 20,
+          }}
+          onClick={() => setComposerOpen(false)}
+        >
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 560,
+              maxHeight: "calc(100vh - 40px)",
+              overflowY: "auto",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--color-surface)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "20px 22px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Crear publicación</span>
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="Cerrar"
+                onClick={() => setComposerOpen(false)}
+                style={{
+                  display: "grid",
+                  placeItems: "center",
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  border: 0,
+                  background: "color-mix(in srgb, var(--color-text) 8%, transparent)",
+                  color: "var(--color-text)",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
           <div style={avatarStyle("accent-300", "accent-900", 40)}>{myInitials}</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <input
               className="input"
+              autoFocus
               placeholder="Título (opcional)"
               style={{ background: "var(--color-neutral-100)", fontSize: 15, fontWeight: 600 }}
               value={draftTitle}
@@ -290,14 +404,14 @@ export default function FeedView({
                 onClick={() => applyFormat("bold")}
                 disabled={isMuted}
                 aria-label="Negrita"
-                title="Negrita"
+                title={boldOn ? "Negrita (activa — vuelve a tocar para desactivar)" : "Negrita"}
                 style={{
                   minHeight: 26,
                   width: 26,
-                  border: "1px solid var(--color-divider)",
+                  border: boldOn ? "1px solid transparent" : "1px solid var(--color-divider)",
                   borderRadius: "var(--radius-sm)",
-                  background: "transparent",
-                  color: "var(--color-text)",
+                  background: boldOn ? "var(--color-accent-200)" : "transparent",
+                  color: boldOn ? "var(--color-accent-900)" : "var(--color-text)",
                   fontWeight: 800,
                   fontSize: 13,
                   cursor: "pointer",
@@ -310,14 +424,14 @@ export default function FeedView({
                 onClick={() => applyFormat("italic")}
                 disabled={isMuted}
                 aria-label="Cursiva"
-                title="Cursiva"
+                title={italicOn ? "Cursiva (activa — vuelve a tocar para desactivar)" : "Cursiva"}
                 style={{
                   minHeight: 26,
                   width: 26,
-                  border: "1px solid var(--color-divider)",
+                  border: italicOn ? "1px solid transparent" : "1px solid var(--color-divider)",
                   borderRadius: "var(--radius-sm)",
-                  background: "transparent",
-                  color: "var(--color-text)",
+                  background: italicOn ? "var(--color-accent-200)" : "transparent",
+                  color: italicOn ? "var(--color-accent-900)" : "var(--color-text)",
                   fontStyle: "italic",
                   fontSize: 13,
                   cursor: "pointer",
@@ -573,7 +687,9 @@ export default function FeedView({
             </div>
           </div>
         </div>
-      </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <h1 style={{ fontSize: 29, margin: 0, lineHeight: 1.1 }}>{feedTitle}</h1>
@@ -656,7 +772,7 @@ export default function FeedView({
               <span>· {p.time}</span>
             </div>
             <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, cursor: "pointer" }} onClick={() => onOpenPost(p.id)}>
-              {renderFormattedText(p.title)}
+              {stripFormatMarkers(p.title)}
             </h2>
             {p.excerpt !== p.title && (
               <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
