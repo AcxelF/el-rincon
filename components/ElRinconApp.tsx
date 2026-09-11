@@ -360,6 +360,12 @@ export default function ElRinconApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, cat, sort, search, categories]);
 
+  const matchingCategories = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return categories.filter((c) => c.id !== "all" && c.name.toLowerCase().includes(q)).slice(0, 6);
+  }, [categories, search]);
+
   const catCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of categories) {
@@ -478,6 +484,11 @@ export default function ElRinconApp({
     setCat(id);
     setView("feed");
     setMobileNavOpen(false);
+  }
+
+  function pickCategoryFromSearch(id: string) {
+    pickCategory(id);
+    setSearch("");
   }
 
   function toggleFollowCategory(id: string) {
@@ -802,6 +813,9 @@ export default function ElRinconApp({
               feedTitle={search.trim() ? `Resultados para "${search.trim()}"` : cat === "all" ? "Publicaciones recientes" : categoryLabel(cat)}
               emptyMessage={search.trim() ? "No encontramos nada por aquí. Prueba con otra palabra." : "Todavía no hay nada por aquí. ¡Sé la primera persona en publicar!"}
               matchingUsers={search.trim() ? matchingUsers : []}
+              matchingCategories={matchingCategories}
+              onViewCategory={pickCategoryFromSearch}
+              isSearching={!!search.trim()}
               sort={sort}
               onSortChange={setSort}
               posts={feedPosts}

@@ -16,6 +16,13 @@ const SORTS: SortMode[] = ["Recientes", "Populares"];
 const MAX_POLL_OPTIONS = 4;
 const FEED_EXCERPT_LIMIT = 240;
 
+const SEARCH_SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  letterSpacing: ".1em",
+  textTransform: "uppercase",
+  color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+};
+
 function categoryTagIcon(id: string, emoji?: string) {
   const Icon = iconForCategory(id);
   return Icon ? <Icon size={13} weight="bold" /> : <span style={{ fontSize: 12 }}>{emoji}</span>;
@@ -65,6 +72,9 @@ export default function FeedView({
   feedTitle,
   emptyMessage,
   matchingUsers,
+  matchingCategories,
+  onViewCategory,
+  isSearching,
   sort,
   onSortChange,
   posts,
@@ -99,6 +109,9 @@ export default function FeedView({
   feedTitle: string;
   emptyMessage: string;
   matchingUsers: { alias: string; badge: string | null }[];
+  matchingCategories: Category[];
+  onViewCategory: (id: string) => void;
+  isSearching: boolean;
   sort: SortMode;
   onSortChange: (s: SortMode) => void;
   posts: DecoratedPost[];
@@ -769,18 +782,53 @@ export default function FeedView({
         </div>
       </div>
 
+      {matchingCategories.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={SEARCH_SECTION_LABEL}>Temas y carreras</div>
+          {matchingCategories.map((c) => {
+            const Icon = iconForCategory(c.id);
+            return (
+              <div
+                key={c.id}
+                className="alias-link-row"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-lg)",
+                  background: "var(--color-neutral-100)",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+                onClick={() => onViewCategory(c.id)}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    flex: "none",
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "var(--color-accent-200)",
+                    color: "var(--color-accent-900)",
+                  }}
+                >
+                  {Icon ? <Icon size={17} /> : <span style={{ fontSize: 15 }}>{c.emoji}</span>}
+                </div>
+                <div className="alias-link-text" style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14.5 }}>
+                  {c.name}
+                </div>
+                <span className="tag tag-neutral">{c.group === "carrera" ? "Carrera" : "Tema"}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {matchingUsers.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div
-            style={{
-              fontSize: 11,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-              color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-            }}
-          >
-            Personas
-          </div>
+          <div style={SEARCH_SECTION_LABEL}>Personas</div>
           {matchingUsers.map((u) => (
             <div
               key={u.alias}
@@ -804,7 +852,9 @@ export default function FeedView({
         </div>
       )}
 
-      {posts.length === 0 && matchingUsers.length === 0 && (
+      {isSearching && posts.length > 0 && <div style={SEARCH_SECTION_LABEL}>Publicaciones</div>}
+
+      {posts.length === 0 && matchingUsers.length === 0 && matchingCategories.length === 0 && (
         <div style={{ padding: "28px 22px", textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>{emptyMessage}</div>
       )}
 
