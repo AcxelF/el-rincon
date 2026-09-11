@@ -18,6 +18,7 @@ export default function ImageLightbox({ src, onClose }: { src: string | null; on
 
   return createPortal(
     <div
+      className="lightbox-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -53,6 +54,7 @@ export default function ImageLightbox({ src, onClose }: { src: string | null; on
       <img
         src={src}
         alt=""
+        className="lightbox-image"
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: "min(100%, 1100px)", maxHeight: "calc(100vh - 40px)", objectFit: "contain", borderRadius: "var(--radius-md)" }}
       />

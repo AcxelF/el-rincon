@@ -563,6 +563,24 @@ textarea.input {
   }
 }
 
+/* — image lightbox: backdrop fades, image scales up softly from its center — */
+.lightbox-backdrop {
+  transition: opacity 220ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+.lightbox-image {
+  transform: scale(1);
+  transition: transform 220ms var(--ease-out), opacity 220ms var(--ease-out);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
 /* — chat panel: grows from / shrinks back into the message button — */
 .chat-panel {
   transform-origin: bottom right;
@@ -657,6 +675,8 @@ textarea.input {
   .heart-pop,
   .hover-tooltip,
   .attach-menu,
+  .lightbox-backdrop,
+  .lightbox-image,
   .auth-input,
   .auth-mode-slide,
   .chat-panel {
