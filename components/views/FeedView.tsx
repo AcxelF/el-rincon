@@ -51,6 +51,7 @@ export default function FeedView({
   onDraftChange,
   categories,
   defaultCatId,
+  followedCategoryIds,
   postAsLabel,
   isGuest,
   anon,
@@ -82,6 +83,7 @@ export default function FeedView({
   onDraftChange: (v: string) => void;
   categories: Category[];
   defaultCatId: string;
+  followedCategoryIds: string[];
   postAsLabel: string;
   isGuest: boolean;
   anon: boolean;
@@ -119,6 +121,7 @@ export default function FeedView({
   const [prevDefaultCatId, setPrevDefaultCatId] = useState(defaultCatId);
   const [catManuallyPicked, setCatManuallyPicked] = useState(false);
   const [catMenuOpen, setCatMenuOpen] = useState(false);
+  const [catMenuTab, setCatMenuTab] = useState<"tema" | "carrera">("tema");
   const [catQuery, setCatQuery] = useState("");
   const catMenuRef = useRef<HTMLDivElement>(null);
 
@@ -152,8 +155,9 @@ export default function FeedView({
   }, [catMenuOpen]);
 
   const topicCats = categories.filter((c) => c.group === "tema");
+  const followedCareer = categories.find((c) => c.group === "carrera" && followedCategoryIds.includes(c.id));
   const careerCats = categories
-    .filter((c) => c.group === "carrera")
+    .filter((c) => c.group === "carrera" && c.id !== followedCareer?.id)
     .filter((c) => c.name.toLowerCase().includes(catQuery.trim().toLowerCase()));
   const composeCategory = categories.find((c) => c.id === composeCat);
 
@@ -162,6 +166,46 @@ export default function FeedView({
     setCatManuallyPicked(true);
     setCatMenuOpen(false);
     setCatQuery("");
+  }
+
+  function toggleCatMenu() {
+    setCatMenuOpen((o) => {
+      const next = !o;
+      if (next) setCatMenuTab(composeCategory?.group === "carrera" ? "carrera" : "tema");
+      return next;
+    });
+  }
+
+  function renderCategoryRow(c: Category) {
+    const Icon = iconForCategory(c.id);
+    const active = composeCat === c.id;
+    return (
+      <button
+        key={c.id}
+        type="button"
+        className="chip-btn"
+        onClick={() => pickComposeCat(c.id)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          width: "100%",
+          padding: "8px 10px",
+          border: 0,
+          borderRadius: "var(--radius-sm)",
+          background: active ? "var(--color-accent-200)" : "transparent",
+          color: active ? "var(--color-accent-900)" : "var(--color-text)",
+          fontSize: 13.5,
+          fontWeight: active ? 600 : 500,
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        {Icon ? <Icon size={16} style={{ flex: "none" }} /> : <span style={{ flex: "none" }}>{c.emoji}</span>}
+        <span style={{ flex: 1 }}>{c.name}</span>
+        {active && <Check size={14} weight="bold" style={{ flex: "none" }} />}
+      </button>
+    );
   }
 
   async function handleShare(post: DecoratedPost) {
@@ -256,7 +300,7 @@ export default function FeedView({
                   <button
                     type="button"
                     className="tag tag-accent"
-                    onClick={() => setCatMenuOpen((o) => !o)}
+                    onClick={toggleCatMenu}
                     disabled={isMuted}
                     style={{ display: "inline-flex", alignItems: "center", gap: 5, border: 0, cursor: "pointer" }}
                   >
@@ -266,112 +310,90 @@ export default function FeedView({
                   </button>
 
                   {catMenuOpen && (
-                    <div className="attach-menu" style={{ top: "calc(100% + 8px)", left: 0, width: 260, maxHeight: 320, overflowY: "auto" }}>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          letterSpacing: ".08em",
-                          textTransform: "uppercase",
-                          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-                          padding: "4px 10px 6px",
-                        }}
-                      >
-                        Temas
-                      </div>
-                      {topicCats.map((c) => {
-                        const Icon = iconForCategory(c.id);
-                        const active = composeCat === c.id;
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            className="chip-btn"
-                            onClick={() => pickComposeCat(c.id)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: 0,
-                              borderRadius: "var(--radius-sm)",
-                              background: active ? "var(--color-accent-200)" : "transparent",
-                              color: active ? "var(--color-accent-900)" : "var(--color-text)",
-                              fontSize: 13.5,
-                              fontWeight: active ? 600 : 500,
-                              cursor: "pointer",
-                              textAlign: "left",
-                            }}
-                          >
-                            {Icon ? <Icon size={16} style={{ flex: "none" }} /> : <span style={{ flex: "none" }}>{c.emoji}</span>}
-                            <span style={{ flex: 1 }}>{c.name}</span>
-                            {active && <Check size={14} weight="bold" style={{ flex: "none" }} />}
-                          </button>
-                        );
-                      })}
-
-                      <div
-                        style={{
-                          fontSize: 11,
-                          letterSpacing: ".08em",
-                          textTransform: "uppercase",
-                          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-                          padding: "10px 10px 6px",
-                        }}
-                      >
-                        Carreras
-                      </div>
-                      <div style={{ padding: "0 10px 6px" }}>
-                        <input
-                          className="input"
-                          placeholder="Buscar carrera…"
-                          value={catQuery}
-                          onChange={(e) => setCatQuery(e.target.value)}
-                          style={{ minHeight: 32, fontSize: 12.5 }}
-                        />
-                      </div>
-                      {careerCats.map((c) => {
-                        const Icon = iconForCategory(c.id);
-                        const active = composeCat === c.id;
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            className="chip-btn"
-                            onClick={() => pickComposeCat(c.id)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: 0,
-                              borderRadius: "var(--radius-sm)",
-                              background: active ? "var(--color-accent-200)" : "transparent",
-                              color: active ? "var(--color-accent-900)" : "var(--color-text)",
-                              fontSize: 13.5,
-                              fontWeight: active ? 600 : 500,
-                              cursor: "pointer",
-                              textAlign: "left",
-                            }}
-                          >
-                            {Icon ? <Icon size={16} style={{ flex: "none" }} /> : <span style={{ flex: "none" }}>{c.emoji}</span>}
-                            <span style={{ flex: 1 }}>{c.name}</span>
-                            {active && <Check size={14} weight="bold" style={{ flex: "none" }} />}
-                          </button>
-                        );
-                      })}
-                      {careerCats.length === 0 && (
-                        <div
+                    <div className="attach-menu" style={{ top: "calc(100% + 8px)", left: 0, width: 260, padding: "6px 6px 0" }}>
+                      <div style={{ display: "flex", gap: 4, paddingBottom: 6, borderBottom: "1px solid var(--color-divider)", marginBottom: 4 }}>
+                        <button
+                          type="button"
+                          onClick={() => setCatMenuTab("tema")}
                           style={{
-                            padding: "6px 10px",
+                            flex: 1,
+                            padding: "6px 8px",
+                            borderRadius: "var(--radius-sm)",
+                            border: 0,
+                            cursor: "pointer",
                             fontSize: 12.5,
-                            color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                            fontWeight: 700,
+                            background: catMenuTab === "tema" ? "var(--color-accent-200)" : "transparent",
+                            color: catMenuTab === "tema" ? "var(--color-accent-900)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
                           }}
                         >
-                          No encontramos esa carrera.
-                        </div>
-                      )}
+                          Temas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCatMenuTab("carrera")}
+                          style={{
+                            flex: 1,
+                            padding: "6px 8px",
+                            borderRadius: "var(--radius-sm)",
+                            border: 0,
+                            cursor: "pointer",
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            background: catMenuTab === "carrera" ? "var(--color-accent-200)" : "transparent",
+                            color: catMenuTab === "carrera" ? "var(--color-accent-900)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
+                          }}
+                        >
+                          Carreras
+                        </button>
+                      </div>
+
+                      <div style={{ maxHeight: 280, overflowY: "auto", paddingBottom: 6 }}>
+                        {catMenuTab === "tema" && topicCats.map(renderCategoryRow)}
+
+                        {catMenuTab === "carrera" && (
+                          <>
+                            {followedCareer && (
+                              <>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    letterSpacing: ".08em",
+                                    textTransform: "uppercase",
+                                    color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                                    padding: "4px 10px 6px",
+                                  }}
+                                >
+                                  Tu carrera
+                                </div>
+                                {renderCategoryRow(followedCareer)}
+                                <div style={{ height: 1, background: "var(--color-divider)", margin: "6px 4px" }} />
+                              </>
+                            )}
+                            <div style={{ padding: "2px 4px 6px" }}>
+                              <input
+                                className="input"
+                                placeholder="Buscar carrera…"
+                                value={catQuery}
+                                onChange={(e) => setCatQuery(e.target.value)}
+                                style={{ minHeight: 32, fontSize: 12.5 }}
+                              />
+                            </div>
+                            {careerCats.map(renderCategoryRow)}
+                            {careerCats.length === 0 && (
+                              <div
+                                style={{
+                                  padding: "6px 10px",
+                                  fontSize: 12.5,
+                                  color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+                                }}
+                              >
+                                No encontramos esa carrera.
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

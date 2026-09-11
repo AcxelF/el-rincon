@@ -788,6 +788,7 @@ export default function ElRinconApp({
               onDraftChange={setDraft}
               categories={categories}
               defaultCatId={cat === "all" ? "Vida de campus" : cat}
+              followedCategoryIds={followedCategoryIds}
               postAsLabel={postAsLabel}
               isGuest={isGuest}
               anon={anon}
