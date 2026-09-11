@@ -83,6 +83,7 @@ export interface DecoratedPost {
   poll?: DecoratedPoll;
   isQuestion: boolean;
   bestAnswerId: number | null;
+  isMine: boolean;
 }
 
 export interface DecoratedComment {

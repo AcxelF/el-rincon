@@ -96,9 +96,9 @@ export default function ThreadView({
           <button className="btn btn-ghost" style={{ fontSize: 14 }} disabled={post.reported} onClick={onReportPost}>
             {post.reported ? "🚩 Reportado" : "🚩 Reportar"}
           </button>
-          {isAdmin && (
+          {(isAdmin || post.isMine) && (
             <button className="btn btn-ghost" style={{ fontSize: 14, color: "var(--color-accent-2-700)" }} onClick={onDeletePost}>
-              🗑 Eliminar hilo (admin)
+              {post.isMine ? "🗑 Eliminar hilo" : "🗑 Eliminar hilo (admin)"}
             </button>
           )}
         </div>

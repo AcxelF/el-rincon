@@ -102,6 +102,7 @@ async function decorateRow(row: PostRow, viewerUserId: string | null): Promise<D
     poll: await decoratePollFor(row.id, viewerUserId),
     isQuestion: !!row.isQuestion,
     bestAnswerId: row.bestAnswerId ?? null,
+    isMine: viewerUserId !== null && row.authorUserId === viewerUserId,
   };
 }
 

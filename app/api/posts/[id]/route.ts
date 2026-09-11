@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin, getUserFromRequest } from "@/lib/auth";
-import { deletePost, getPost, listComments } from "@/lib/posts";
+import { getUserFromRequest } from "@/lib/auth";
+import { deletePost, getPost, getPostOwnerUserId, listComments } from "@/lib/posts";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,9 +12,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(request);
-  if (!admin) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  const user = await getUserFromRequest(request);
+  if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+
   const { id } = await params;
-  await deletePost(Number(id));
+  const postId = Number(id);
+  const ownerId = await getPostOwnerUserId(postId);
+  if (!user.isAdmin && ownerId !== user.id) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+
+  await deletePost(postId);
   return NextResponse.json({ ok: true });
 }

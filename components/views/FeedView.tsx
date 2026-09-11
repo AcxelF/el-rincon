@@ -1040,18 +1040,18 @@ export default function FeedView({
                 {p.reported ? "🚩 Reportado" : "🚩 Reportar"}
               </button>
               {isAdmin && (
-                <>
-                  <button className="btn btn-ghost" style={{ minHeight: 34, fontSize: 13, marginLeft: "auto" }} onClick={() => onTogglePin(p.id)}>
-                    {p.pinned ? "📌 Quitar" : "📌 Fijar"}
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ minHeight: 34, fontSize: 13, color: "var(--color-accent-2-700)" }}
-                    onClick={() => onDeletePost(p.id)}
-                  >
-                    🗑 Eliminar (admin)
-                  </button>
-                </>
+                <button className="btn btn-ghost" style={{ minHeight: 34, fontSize: 13, marginLeft: "auto" }} onClick={() => onTogglePin(p.id)}>
+                  {p.pinned ? "📌 Quitar" : "📌 Fijar"}
+                </button>
+              )}
+              {(isAdmin || p.isMine) && (
+                <button
+                  className="btn btn-ghost"
+                  style={{ minHeight: 34, fontSize: 13, marginLeft: isAdmin ? undefined : "auto", color: "var(--color-accent-2-700)" }}
+                  onClick={() => onDeletePost(p.id)}
+                >
+                  {p.isMine ? "🗑 Eliminar" : "🗑 Eliminar (admin)"}
+                </button>
               )}
             </div>
           </div>
