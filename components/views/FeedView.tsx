@@ -5,6 +5,7 @@ import { CaretDown, ChartBar, Check, Paperclip, Question } from "@phosphor-icons
 import type { Category, DecoratedPost, SortMode } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
 import { iconForCategory } from "@/lib/category-icons";
+import { renderFormattedText } from "@/lib/format-text";
 import Badge from "@/components/Badge";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
@@ -50,6 +51,8 @@ async function sharePost(post: DecoratedPost): Promise<"copied" | "failed"> {
 export default function FeedView({
   draft,
   onDraftChange,
+  draftTitle,
+  onDraftTitleChange,
   categories,
   defaultCatId,
   followedCategoryIds,
@@ -82,6 +85,8 @@ export default function FeedView({
 }: {
   draft: string;
   onDraftChange: (v: string) => void;
+  draftTitle: string;
+  onDraftTitleChange: (v: string) => void;
   categories: Category[];
   defaultCatId: string;
   followedCategoryIds: string[];
@@ -113,6 +118,7 @@ export default function FeedView({
   onToggleFollow: (alias: string) => void;
 }) {
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
+  const draftBodyRef = useRef<HTMLTextAreaElement>(null);
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [questionEnabled, setQuestionEnabled] = useState(false);
@@ -209,6 +215,24 @@ export default function FeedView({
     );
   }
 
+  function applyFormat(kind: "bold" | "italic") {
+    const el = draftBodyRef.current;
+    if (!el) return;
+    const marker = kind === "bold" ? "**" : "*";
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    const selected = draft.slice(start, end);
+    const placeholder = selected || (kind === "bold" ? "negrita" : "cursiva");
+    const next = draft.slice(0, start) + marker + placeholder + marker + draft.slice(end);
+    onDraftChange(next);
+    const selectFrom = start + marker.length;
+    const selectTo = selectFrom + placeholder.length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(selectFrom, selectTo);
+    });
+  }
+
   async function handleShare(post: DecoratedPost) {
     const result = await sharePost(post);
     const label = result === "copied" ? "✓ Link copiado" : "No se pudo copiar";
@@ -250,8 +274,60 @@ export default function FeedView({
       <div style={{ padding: "20px 22px", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
           <div style={avatarStyle("accent-300", "accent-900", 40)}>{myInitials}</div>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <input
+              className="input"
+              placeholder="Título (opcional)"
+              style={{ background: "var(--color-neutral-100)", fontSize: 15, fontWeight: 600 }}
+              value={draftTitle}
+              onChange={(e) => onDraftTitleChange(e.target.value)}
+              disabled={isMuted}
+              maxLength={120}
+            />
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                type="button"
+                onClick={() => applyFormat("bold")}
+                disabled={isMuted}
+                aria-label="Negrita"
+                title="Negrita"
+                style={{
+                  minHeight: 26,
+                  width: 26,
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "transparent",
+                  color: "var(--color-text)",
+                  fontWeight: 800,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                N
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("italic")}
+                disabled={isMuted}
+                aria-label="Cursiva"
+                title="Cursiva"
+                style={{
+                  minHeight: 26,
+                  width: 26,
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "transparent",
+                  color: "var(--color-text)",
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                K
+              </button>
+            </div>
             <textarea
+              ref={draftBodyRef}
               className="input"
               placeholder={isMuted ? "Un admin te silenció. No puedes publicar por ahora." : "¿Qué quieres compartir?"}
               style={{ background: "var(--color-neutral-100)", minHeight: 74, fontSize: 15 }}
@@ -580,11 +656,13 @@ export default function FeedView({
               <span>· {p.time}</span>
             </div>
             <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, cursor: "pointer" }} onClick={() => onOpenPost(p.id)}>
-              {p.title}
+              {renderFormattedText(p.title)}
             </h2>
             {p.excerpt !== p.title && (
               <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
-                {p.excerpt.length > FEED_EXCERPT_LIMIT ? p.excerpt.slice(0, FEED_EXCERPT_LIMIT).trimEnd() + "…" : p.excerpt}
+                {renderFormattedText(
+                  p.excerpt.length > FEED_EXCERPT_LIMIT ? p.excerpt.slice(0, FEED_EXCERPT_LIMIT).trimEnd() + "…" : p.excerpt
+                )}
                 {p.excerpt.length > FEED_EXCERPT_LIMIT && (
                   <>
                     {" "}

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import type { DecoratedComment, DecoratedPost } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, soft, softOn } from "@/lib/style-helpers";
+import { renderFormattedText } from "@/lib/format-text";
 import Badge from "@/components/Badge";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
@@ -125,9 +126,11 @@ export default function ThreadView({
           )}
           <span>· {post.time}</span>
         </div>
-        <h1 style={{ margin: 0, fontSize: 32, lineHeight: 1.12 }}>{post.title}</h1>
+        <h1 style={{ margin: 0, fontSize: 32, lineHeight: 1.12 }}>{renderFormattedText(post.title)}</h1>
         {post.body !== post.title && (
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>{post.body}</p>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
+            {renderFormattedText(post.body)}
+          </p>
         )}
         {post.poll && (
           <div style={{ maxWidth: 420 }}>

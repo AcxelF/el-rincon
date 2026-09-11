@@ -33,12 +33,15 @@ export async function POST(request: NextRequest) {
   if (!text) return NextResponse.json({ error: "El texto no puede estar vacío." }, { status: 400 });
   if (text.length > 2000) return NextResponse.json({ error: "El texto no puede superar los 2000 caracteres." }, { status: 400 });
 
+  const title = typeof body?.title === "string" ? body.title.trim() : "";
+  if (title.length > 120) return NextResponse.json({ error: "El título no puede superar los 120 caracteres." }, { status: 400 });
+
   const requestedCat = typeof body?.cat === "string" ? body.cat : "";
   const cat = VALID_CATEGORY_IDS.has(requestedCat) ? requestedCat : "Vida de campus";
   const anon = !!body?.anon;
   const isQuestion = !!body?.isQuestion;
   const pollOptions = Array.isArray(body?.pollOptions) ? body.pollOptions.filter((o: unknown) => typeof o === "string") : undefined;
 
-  const postId = await createPost({ userId: user.id, alias: user.alias, anon, cat, text, pollOptions, isQuestion });
+  const postId = await createPost({ userId: user.id, alias: user.alias, anon, cat, text, title: title || undefined, pollOptions, isQuestion });
   return NextResponse.json({ id: postId });
 }

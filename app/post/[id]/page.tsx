@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPost } from "@/lib/posts";
+import { stripFormatMarkers } from "@/lib/format-text";
 import RedirectToThread from "./RedirectToThread";
 
 type Params = { id: string };
@@ -12,19 +13,22 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     return { title: "El Rincón — Científica del Sur" };
   }
 
+  const title = stripFormatMarkers(post.title);
+  const description = stripFormatMarkers(post.excerpt);
+
   return {
-    title: `${post.title} — El Rincón`,
-    description: post.excerpt,
+    title: `${title} — El Rincón`,
+    description,
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title,
+      description,
       siteName: "El Rincón — Científica del Sur",
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt,
+      title,
+      description,
     },
   };
 }
@@ -50,7 +54,7 @@ export default async function SharedPostPage({ params }: { params: Promise<Param
       >
         <div>
           <p style={{ fontSize: 15, color: "#667286" }}>Abriendo El Rincón…</p>
-          {post && <h1 style={{ fontSize: 22, marginTop: 10, maxWidth: 560 }}>{post.title}</h1>}
+          {post && <h1 style={{ fontSize: 22, marginTop: 10, maxWidth: 560 }}>{stripFormatMarkers(post.title)}</h1>}
         </div>
       </main>
     </>

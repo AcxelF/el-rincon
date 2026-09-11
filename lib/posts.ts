@@ -1,5 +1,6 @@
 import { run, getOne, getAll } from "./db";
 import { CATEGORIES } from "./mock-data";
+import { stripFormatMarkers } from "./format-text";
 import type { AppNotification, DecoratedComment, DecoratedPoll, DecoratedPost, Report, RankingUser, VoteValue } from "./types";
 
 const CATEGORY_NAMES: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.name]));
@@ -202,11 +203,12 @@ export async function createPost(opts: {
   anon: boolean;
   cat: string;
   text: string;
+  title?: string;
   pollOptions?: string[];
   isQuestion?: boolean;
 }): Promise<number> {
   const author = opts.anon ? randomAnonLabel() : opts.alias;
-  const title = opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text;
+  const title = opts.title?.trim() || (opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text);
   const result = await run(
     `INSERT INTO posts (cat, author, author_user_id, is_anon, title, excerpt, body, is_question)
      VALUES (:cat, :author, :userId, :isAnon, :title, :excerpt, :body, :isQuestion)`,
@@ -417,7 +419,8 @@ async function notifyPostReaction(postId: number, actorUserId: string, type: "vo
     postId,
   });
   if (!post?.authorUserId || post.authorUserId === actorUserId) return;
-  const message = type === "vote" ? `Tu hilo "${post.title}" recibió un voto nuevo.` : `A alguien le gustó tu hilo "${post.title}".`;
+  const title = stripFormatMarkers(post.title);
+  const message = type === "vote" ? `Tu hilo "${title}" recibió un voto nuevo.` : `A alguien le gustó tu hilo "${title}".`;
   await run("INSERT INTO notifications (user_id, type, post_id, message) VALUES (:userId, :type, :postId, :message)", {
     userId: post.authorUserId,
     type,
@@ -434,7 +437,7 @@ async function notifyNewComment(postId: number, actorUserId: string): Promise<vo
   await run("INSERT INTO notifications (user_id, type, post_id, message) VALUES (:userId, 'comment', :postId, :message)", {
     userId: post.authorUserId,
     postId,
-    message: `Nuevo comentario en tu hilo "${post.title}".`,
+    message: `Nuevo comentario en tu hilo "${stripFormatMarkers(post.title)}".`,
   });
 }
 
@@ -449,6 +452,6 @@ async function notifyCommentLike(commentId: number, actorUserId: string): Promis
     userId: row.authorUserId,
     postId: row.postId,
     commentId,
-    message: `A alguien le gustó tu comentario en "${row.postTitle}".`,
+    message: `A alguien le gustó tu comentario en "${stripFormatMarkers(row.postTitle)}".`,
   });
 }

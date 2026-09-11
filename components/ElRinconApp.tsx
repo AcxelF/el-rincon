@@ -51,6 +51,7 @@ export default function ElRinconApp({
   const [anon, setAnon] = useState(false);
   const [dark, setDark] = useState(false);
   const [draft, setDraft] = useState("");
+  const [draftTitle, setDraftTitle] = useState("");
   const [reply, setReply] = useState("");
   const [dmDraft, setDmDraft] = useState("");
   const [openId, setOpenId] = useState<number | null>(null);
@@ -497,13 +498,15 @@ export default function ElRinconApp({
     if (isMuted) return false;
     const text = draft.trim();
     if (!text) return false;
+    const title = draftTitle.trim();
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, cat: catId, pollOptions, isQuestion, anon }),
+      body: JSON.stringify({ text, title: title || undefined, cat: catId, pollOptions, isQuestion, anon }),
     });
     if (!res.ok) return false;
     setDraft("");
+    setDraftTitle("");
     setSort("Recientes");
     setCat(catId);
     await refreshPosts();
@@ -786,6 +789,8 @@ export default function ElRinconApp({
             <FeedView
               draft={draft}
               onDraftChange={setDraft}
+              draftTitle={draftTitle}
+              onDraftTitleChange={setDraftTitle}
               categories={categories}
               defaultCatId={cat === "all" ? "Vida de campus" : cat}
               followedCategoryIds={followedCategoryIds}
