@@ -5,6 +5,7 @@ import type { BadgeInfo, DecoratedComment, DecoratedPost } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, soft, softOn } from "@/lib/style-helpers";
 import { renderFormattedText, stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
+import NameText from "@/components/NameText";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
@@ -117,12 +118,8 @@ export default function ThreadView({
           {post.isQuestion && <span className="tag tag-accent">❓ Pregunta</span>}
           {post.isQuestion && post.bestAnswerId != null && <span className="tag tag-accent-2">✓ Resuelta</span>}
           <span className="tag tag-accent-2">{post.cat}</span>
-          <span
-            className={["alias-link", badges[post.author]?.nameEffect ? `text-effect-${badges[post.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
-            style={{ fontWeight: 600, color: "var(--color-text)" }}
-            onClick={() => onViewProfile(post.author)}
-          >
-            {post.author}
+          <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(post.author)}>
+            <NameText text={post.author} color={badges[post.author]?.nameColor} effect={badges[post.author]?.nameEffect} />
           </span>
           <Badge
             label={badges[post.author]?.label}
@@ -216,12 +213,8 @@ export default function ThreadView({
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
               {c.isBestAnswer && <span className="tag tag-accent-2">✓ Mejor respuesta</span>}
-              <span
-                className={["alias-link", badges[c.author]?.nameEffect ? `text-effect-${badges[c.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
-                style={{ fontWeight: 600, color: "var(--color-text)" }}
-                onClick={() => onViewProfile(c.author)}
-              >
-                {c.author}
+              <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(c.author)}>
+                <NameText text={c.author} color={badges[c.author]?.nameColor} effect={badges[c.author]?.nameEffect} />
               </span>
               <Badge
                 label={badges[c.author]?.label}

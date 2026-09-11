@@ -22,13 +22,14 @@ export interface Category {
   group?: "tema" | "carrera";
 }
 
-export type TextEffect = "blink" | "shift" | "pulse" | "glow" | "shake" | "outline";
+export type TextEffect = "blink" | "shift" | "pulse" | "glow" | "shake" | "outline" | "rainbow";
 
 export interface BadgeInfo {
   label: string | null;
   color: string | null;
   textColor: string | null;
   effect: TextEffect | null;
+  nameColor: string | null;
   nameEffect: TextEffect | null;
 }
 

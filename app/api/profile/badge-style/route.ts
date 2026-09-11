@@ -3,7 +3,7 @@ import { getUserFromRequest, setUserBadgeStyle } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { TextEffect } from "@/lib/types";
 
-const VALID_EFFECTS = new Set<string>(["blink", "shift", "pulse", "glow", "shake", "outline"]);
+const VALID_EFFECTS = new Set<string>(["blink", "shift", "pulse", "glow", "shake", "outline", "rainbow"]);
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 function asEffect(raw: string | null): TextEffect | null {
@@ -24,6 +24,8 @@ export async function PATCH(request: NextRequest) {
   const textColorRaw = typeof body?.textColor === "string" ? body.textColor.trim() : null;
   const effectProvided = typeof body?.effect === "string" || body?.effect === null;
   const effectRaw = typeof body?.effect === "string" ? body.effect : null;
+  const nameColorProvided = typeof body?.nameColor === "string" || body?.nameColor === null;
+  const nameColorRaw = typeof body?.nameColor === "string" ? body.nameColor.trim() : null;
   const nameEffectProvided = typeof body?.nameEffect === "string" || body?.nameEffect === null;
   const nameEffectRaw = typeof body?.nameEffect === "string" ? body.nameEffect : null;
 
@@ -33,23 +35,33 @@ export async function PATCH(request: NextRequest) {
   if (textColorRaw && !HEX_COLOR.test(textColorRaw)) {
     return NextResponse.json({ error: "El color del texto debe ser un código hexadecimal válido (#RRGGBB)." }, { status: 400 });
   }
+  if (nameColorRaw && !HEX_COLOR.test(nameColorRaw)) {
+    return NextResponse.json({ error: "El color del nombre de usuario debe ser un código hexadecimal válido (#RRGGBB)." }, { status: 400 });
+  }
   if (effectRaw && !VALID_EFFECTS.has(effectRaw)) {
     return NextResponse.json({ error: "Efecto inválido." }, { status: 400 });
   }
   if (nameEffectRaw && !VALID_EFFECTS.has(nameEffectRaw)) {
     return NextResponse.json({ error: "Efecto inválido." }, { status: 400 });
   }
-  if ((effectRaw || nameEffectRaw) && !user.isAdmin) {
-    return NextResponse.json({ error: "Solo los administradores pueden cambiar efectos de texto." }, { status: 403 });
+  if ((effectRaw || nameColorRaw || nameEffectRaw) && !user.isAdmin) {
+    return NextResponse.json({ error: "Solo los administradores pueden personalizar su nombre de usuario o los efectos de texto." }, { status: 403 });
   }
 
-  // Non-admins never touch the effect columns at all — even to clear them — since they can't
-  // set one in the first place. Admins can explicitly set or clear either one (value: null).
+  // Non-admins never touch the effect/name columns at all — even to clear them — since they
+  // can't set one in the first place. Admins can explicitly set or clear any of them (value: null).
   const color = colorProvided ? colorRaw || null : undefined;
   const textColor = textColorProvided ? textColorRaw || null : undefined;
   const effect = user.isAdmin && effectProvided ? asEffect(effectRaw) : undefined;
+  const nameColor = user.isAdmin && nameColorProvided ? nameColorRaw || null : undefined;
   const nameEffect = user.isAdmin && nameEffectProvided ? asEffect(nameEffectRaw) : undefined;
 
-  await setUserBadgeStyle(user.id, color, textColor, effect, nameEffect);
-  return NextResponse.json({ color: color ?? null, textColor: textColor ?? null, effect: effect ?? null, nameEffect: nameEffect ?? null });
+  await setUserBadgeStyle(user.id, color, textColor, effect, nameColor, nameEffect);
+  return NextResponse.json({
+    color: color ?? null,
+    textColor: textColor ?? null,
+    effect: effect ?? null,
+    nameColor: nameColor ?? null,
+    nameEffect: nameEffect ?? null,
+  });
 }

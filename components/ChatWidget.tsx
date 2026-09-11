@@ -5,6 +5,7 @@ import { ArrowLeft, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import type { BadgeInfo, Chat, ChatMessage } from "@/lib/types";
 import { avatarForAlias, bubbleRowStyle, bubbleStyle, chatDotStyle, initials } from "@/lib/style-helpers";
 import Badge from "@/components/Badge";
+import NameText from "@/components/NameText";
 
 export default function ChatWidget({
   open,
@@ -263,7 +264,7 @@ export default function ChatWidget({
             <div style={avatarForAlias(chat.alias, 32)}>{initials(chat.alias)}</div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <span className={badges[chat.alias]?.nameEffect ? `text-effect-${badges[chat.alias]?.nameEffect}` : ""}>{chat.alias}</span>
+                <NameText text={chat.alias} color={badges[chat.alias]?.nameColor} effect={badges[chat.alias]?.nameEffect} />
                 <Badge
                   label={badges[chat.alias]?.label}
                   color={badges[chat.alias]?.color}

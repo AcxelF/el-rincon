@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BADGE_PRESETS } from "@/lib/badges";
 import type { TextEffect } from "@/lib/types";
 import Badge from "@/components/Badge";
+import NameText from "@/components/NameText";
 
 const EFFECTS: { value: "" | TextEffect; label: string }[] = [
   { value: "", label: "Sin efecto" },
@@ -13,6 +14,7 @@ const EFFECTS: { value: "" | TextEffect; label: string }[] = [
   { value: "glow", label: "Brillo neón" },
   { value: "shake", label: "Sacudida" },
   { value: "outline", label: "Contorno" },
+  { value: "rainbow", label: "Arcoíris (letra por letra)" },
 ];
 
 export default function BadgeStyleEditor({
@@ -22,6 +24,7 @@ export default function BadgeStyleEditor({
   currentColor,
   currentTextColor,
   currentEffect,
+  currentNameColor,
   currentNameEffect,
   onToast,
   onBadgeChanged,
@@ -32,6 +35,7 @@ export default function BadgeStyleEditor({
   currentColor?: string | null;
   currentTextColor?: string | null;
   currentEffect?: TextEffect | null;
+  currentNameColor?: string | null;
   currentNameEffect?: TextEffect | null;
   onToast: (message: string) => void;
   onBadgeChanged: () => void;
@@ -40,6 +44,7 @@ export default function BadgeStyleEditor({
   const [color, setColor] = useState(currentColor || "#1f5ad6");
   const [textColor, setTextColor] = useState(currentTextColor || "#ffffff");
   const [effect, setEffect] = useState<"" | TextEffect>(currentEffect ?? "");
+  const [nameColor, setNameColor] = useState(currentNameColor || "#e8edf7");
   const [nameEffect, setNameEffect] = useState<"" | TextEffect>(currentNameEffect ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -86,14 +91,14 @@ export default function BadgeStyleEditor({
     }
   }
 
-  async function saveNameEffect() {
+  async function saveNameStyle() {
     setBusy(true);
     setError("");
     try {
       const res = await fetch("/api/profile/badge-style", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nameEffect: nameEffect || null }),
+        body: JSON.stringify({ nameColor, nameEffect: nameEffect || null }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -101,7 +106,7 @@ export default function BadgeStyleEditor({
         return;
       }
       onBadgeChanged();
-      onToast("Efecto de nombre de usuario actualizado");
+      onToast("Nombre de usuario actualizado");
     } finally {
       setBusy(false);
     }
@@ -229,9 +234,24 @@ export default function BadgeStyleEditor({
           >
             Tu nombre de usuario
           </span>
-          <span className={nameEffect ? `text-effect-${nameEffect}` : ""} style={{ fontWeight: 600 }}>
-            {alias}
-          </span>
+          <NameText text={alias} color={nameColor} effect={nameEffect || null} style={{ fontWeight: 600 }} />
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}>
+            Color
+            <input
+              type="color"
+              value={nameColor}
+              onChange={(e) => setNameColor(e.target.value)}
+              style={{
+                width: 34,
+                height: 28,
+                padding: 0,
+                border: "1px solid var(--color-divider)",
+                borderRadius: "var(--radius-sm)",
+                background: "none",
+                cursor: "pointer",
+              }}
+            />
+          </label>
           <select
             className="input"
             value={nameEffect}
@@ -244,8 +264,8 @@ export default function BadgeStyleEditor({
               </option>
             ))}
           </select>
-          <button type="button" className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busy} onClick={saveNameEffect}>
-            Guardar efecto
+          <button type="button" className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busy} onClick={saveNameStyle}>
+            Guardar
           </button>
         </div>
       )}

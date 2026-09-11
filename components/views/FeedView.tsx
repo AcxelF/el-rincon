@@ -8,6 +8,7 @@ import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SOR
 import { iconForCategory } from "@/lib/category-icons";
 import { elementToMarkdown, markdownToHtml, renderFormattedText, stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
+import NameText from "@/components/NameText";
 import Poll from "@/components/Poll";
 import FollowButton from "@/components/FollowButton";
 import AnonToggleButton from "@/components/AnonToggleButton";
@@ -879,12 +880,8 @@ export default function FeedView({
               {p.isQuestion && <span className="tag tag-accent">❓ Pregunta</span>}
               {p.isQuestion && p.bestAnswerId != null && <span className="tag tag-accent-2">✓ Resuelta</span>}
               <span className="tag tag-accent-2">{p.cat}</span>
-              <span
-                className={["alias-link", badges[p.author]?.nameEffect ? `text-effect-${badges[p.author]?.nameEffect}` : ""].filter(Boolean).join(" ")}
-                style={{ fontWeight: 600, color: "var(--color-text)" }}
-                onClick={() => onViewProfile(p.author)}
-              >
-                {p.author}
+              <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(p.author)}>
+                <NameText text={p.author} color={badges[p.author]?.nameColor} effect={badges[p.author]?.nameEffect} />
               </span>
               <Badge
                 label={badges[p.author]?.label}

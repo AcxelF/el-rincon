@@ -897,6 +897,7 @@ export default function ElRinconApp({
               badgeColor={badges[profileAlias]?.color ?? null}
               badgeTextColor={badges[profileAlias]?.textColor ?? null}
               badgeEffect={badges[profileAlias]?.effect ?? null}
+              nameColor={badges[profileAlias]?.nameColor ?? null}
               nameEffect={badges[profileAlias]?.nameEffect ?? null}
               bio={bios[profileAlias]}
               followers={followInfo?.followers ?? 0}

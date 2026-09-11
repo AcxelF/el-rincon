@@ -5,6 +5,7 @@ import type { DecoratedPost, TextEffect } from "@/lib/types";
 import { formatKarma } from "@/lib/mock-data";
 import { stripFormatMarkers } from "@/lib/format-text";
 import Badge from "@/components/Badge";
+import NameText from "@/components/NameText";
 import AdminUserActions from "@/components/AdminUserActions";
 import BadgeStyleEditor from "@/components/BadgeStyleEditor";
 import FollowButton from "@/components/FollowButton";
@@ -27,6 +28,7 @@ export default function ProfileView({
   badgeColor,
   badgeTextColor,
   badgeEffect,
+  nameColor,
   nameEffect,
   bio,
   followers,
@@ -55,6 +57,7 @@ export default function ProfileView({
   badgeColor?: string | null;
   badgeTextColor?: string | null;
   badgeEffect?: TextEffect | null;
+  nameColor?: string | null;
   nameEffect?: TextEffect | null;
   bio?: string;
   followers: number;
@@ -161,7 +164,7 @@ export default function ProfileView({
             </div>
           ) : (
             <h1 style={{ margin: "0 0 4px", fontSize: 30, lineHeight: 1.1, color: "var(--color-accent-900)", display: "flex", alignItems: "center", gap: 10 }}>
-              <span className={nameEffect ? `text-effect-${nameEffect}` : ""}>{alias}</span>
+              <NameText text={alias} color={nameColor} effect={nameEffect} />
               <Badge label={badge} color={badgeColor} textColor={badgeTextColor} effect={badgeEffect} />
             </h1>
           )}
@@ -241,6 +244,7 @@ export default function ProfileView({
           currentColor={badgeColor}
           currentTextColor={badgeTextColor}
           currentEffect={badgeEffect}
+          currentNameColor={nameColor}
           currentNameEffect={nameEffect}
           onToast={onToast}
           onBadgeChanged={onBadgeChanged}

@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { run, getOne, getAll } from "./db";
 import type { BadgeInfo, TextEffect } from "./types";
 
-const TEXT_EFFECTS: readonly TextEffect[] = ["blink", "shift", "pulse", "glow", "shake", "outline"];
+const TEXT_EFFECTS: readonly TextEffect[] = ["blink", "shift", "pulse", "glow", "shake", "outline", "rainbow"];
 function toTextEffect(value: string | null): TextEffect | null {
   return TEXT_EFFECTS.includes(value as TextEffect) ? (value as TextEffect) : null;
 }
@@ -260,10 +260,12 @@ export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
     badgeColor: string | null;
     badgeTextColor: string | null;
     badgeEffect: string | null;
+    nameColor: string | null;
     nameEffect: string | null;
   }>(
-    `SELECT alias, badge, badge_color as badgeColor, badge_text_color as badgeTextColor, badge_effect as badgeEffect, name_effect as nameEffect
-     FROM users WHERE (badge IS NOT NULL AND badge != '') OR name_effect IS NOT NULL`
+    `SELECT alias, badge, badge_color as badgeColor, badge_text_color as badgeTextColor, badge_effect as badgeEffect,
+            name_color as nameColor, name_effect as nameEffect
+     FROM users WHERE (badge IS NOT NULL AND badge != '') OR name_color IS NOT NULL OR name_effect IS NOT NULL`
   );
   const map: Record<string, BadgeInfo> = {};
   for (const r of rows) {
@@ -272,6 +274,7 @@ export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
       color: r.badgeColor,
       textColor: r.badgeTextColor,
       effect: toTextEffect(r.badgeEffect),
+      nameColor: r.nameColor,
       nameEffect: toTextEffect(r.nameEffect),
     };
   }
@@ -280,14 +283,15 @@ export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
 
 /** A rank's colors are a personal touch the owner picks for themselves — separate from the
  * rank text itself, which only an admin can assign. The animated effects (badge effect and
- * username effect) are admin-only. Every field is optional and only touches its own column
- * when provided, so a caller can update just one thing (e.g. only `nameEffect`) without
- * wiping the others. */
+ * username effect) and the username's own color are admin-only. Every field is optional and
+ * only touches its own column when provided, so a caller can update just one thing (e.g. only
+ * `nameEffect`) without wiping the others. */
 export async function setUserBadgeStyle(
   userId: string,
   color?: string | null,
   textColor?: string | null,
   effect?: TextEffect | null,
+  nameColor?: string | null,
   nameEffect?: TextEffect | null
 ) {
   const sets: string[] = [];
@@ -303,6 +307,10 @@ export async function setUserBadgeStyle(
   if (effect !== undefined) {
     sets.push("badge_effect = ?");
     args.push(effect);
+  }
+  if (nameColor !== undefined) {
+    sets.push("name_color = ?");
+    args.push(nameColor);
   }
   if (nameEffect !== undefined) {
     sets.push("name_effect = ?");
