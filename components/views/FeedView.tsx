@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CaretDown, ChartBar, Check, Paperclip, Question, X } from "@phosphor-icons/react";
 import type { Category, DecoratedPost, SortMode } from "@/lib/types";
 import { ARROW, ARROW_DOWN, ARROW_UP, avatarForAlias, avatarStyle, initials, SORT, SORT_ON, soft, softOn } from "@/lib/style-helpers";
@@ -127,14 +128,18 @@ export default function FeedView({
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [questionEnabled, setQuestionEnabled] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [attachMenuPos, setAttachMenuPos] = useState<{ top: number; left: number } | null>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+  const attachMenuPortalRef = useRef<HTMLDivElement>(null);
   const [composeCat, setComposeCat] = useState(defaultCatId);
   const [prevDefaultCatId, setPrevDefaultCatId] = useState(defaultCatId);
   const [catManuallyPicked, setCatManuallyPicked] = useState(false);
   const [catMenuOpen, setCatMenuOpen] = useState(false);
+  const [catMenuPos, setCatMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [catMenuTab, setCatMenuTab] = useState<"tema" | "carrera">("tema");
   const [catQuery, setCatQuery] = useState("");
   const catMenuRef = useRef<HTMLDivElement>(null);
+  const catMenuPortalRef = useRef<HTMLDivElement>(null);
 
   // Follow whatever category the sidebar is browsing, unless the user already
   // chose a different one for the post they're currently writing.
@@ -173,9 +178,10 @@ export default function FeedView({
   useEffect(() => {
     if (!attachMenuOpen) return;
     function onClickOutside(e: MouseEvent) {
-      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
-        setAttachMenuOpen(false);
-      }
+      const target = e.target as Node;
+      const insideTrigger = attachMenuRef.current?.contains(target) ?? false;
+      const insidePortal = attachMenuPortalRef.current?.contains(target) ?? false;
+      if (!insideTrigger && !insidePortal) setAttachMenuOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -184,9 +190,10 @@ export default function FeedView({
   useEffect(() => {
     if (!catMenuOpen) return;
     function onClickOutside(e: MouseEvent) {
-      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) {
-        setCatMenuOpen(false);
-      }
+      const target = e.target as Node;
+      const insideTrigger = catMenuRef.current?.contains(target) ?? false;
+      const insidePortal = catMenuPortalRef.current?.contains(target) ?? false;
+      if (!insideTrigger && !insidePortal) setCatMenuOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -206,10 +213,23 @@ export default function FeedView({
     setCatQuery("");
   }
 
-  function toggleCatMenu() {
+  function toggleCatMenu(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
     setCatMenuOpen((o) => {
       const next = !o;
-      if (next) setCatMenuTab(composeCategory?.group === "carrera" ? "carrera" : "tema");
+      if (next) {
+        setCatMenuTab(composeCategory?.group === "carrera" ? "carrera" : "tema");
+        setCatMenuPos({ top: rect.bottom + 8, left: rect.left });
+      }
+      return next;
+    });
+  }
+
+  function toggleAttachMenu(e: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setAttachMenuOpen((o) => {
+      const next = !o;
+      if (next) setAttachMenuPos({ top: rect.bottom + 8, left: rect.left });
       return next;
     });
   }
@@ -525,8 +545,14 @@ export default function FeedView({
                     <CaretDown size={11} />
                   </button>
 
-                  {catMenuOpen && (
-                    <div className="attach-menu" style={{ top: "calc(100% + 8px)", left: 0, width: 260, padding: "6px 6px 0" }}>
+                  {catMenuOpen &&
+                    catMenuPos &&
+                    createPortal(
+                      <div
+                        ref={catMenuPortalRef}
+                        className="attach-menu"
+                        style={{ position: "fixed", top: catMenuPos.top, left: catMenuPos.left, width: 260, padding: "6px 6px 0", zIndex: 200 }}
+                      >
                       <div style={{ display: "flex", gap: 4, paddingBottom: 6, borderBottom: "1px solid var(--color-divider)", marginBottom: 4 }}>
                         <button
                           type="button"
@@ -610,8 +636,9 @@ export default function FeedView({
                           </>
                         )}
                       </div>
-                    </div>
-                  )}
+                    </div>,
+                      document.body
+                    )}
                 </div>
                 {pollEnabled && <span className="tag tag-accent-2">📊 Encuesta</span>}
                 {questionEnabled && <span className="tag tag-accent-2">❓ Pregunta</span>}
@@ -621,7 +648,7 @@ export default function FeedView({
                     className="chip-btn"
                     aria-label="Tipo de publicación"
                     title="Tipo de publicación"
-                    onClick={() => setAttachMenuOpen((o) => !o)}
+                    onClick={toggleAttachMenu}
                     disabled={isMuted}
                     style={{
                       display: "grid",
@@ -638,8 +665,14 @@ export default function FeedView({
                     <Paperclip size={15} weight={pollEnabled || questionEnabled ? "fill" : "regular"} />
                   </button>
 
-                  {attachMenuOpen && (
-                    <div className="attach-menu" style={{ top: "calc(100% + 8px)", left: 0 }}>
+                  {attachMenuOpen &&
+                    attachMenuPos &&
+                    createPortal(
+                      <div
+                        ref={attachMenuPortalRef}
+                        className="attach-menu"
+                        style={{ position: "fixed", top: attachMenuPos.top, left: attachMenuPos.left, zIndex: 200 }}
+                      >
                       <button
                         type="button"
                         className="chip-btn"
@@ -694,8 +727,9 @@ export default function FeedView({
                         <span style={{ flex: 1 }}>Pregunta</span>
                         {questionEnabled && <Check size={14} weight="bold" style={{ flex: "none" }} />}
                       </button>
-                    </div>
-                  )}
+                    </div>,
+                      document.body
+                    )}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
