@@ -25,6 +25,7 @@ export interface Category {
 export interface BadgeInfo {
   label: string;
   color: string | null;
+  textColor: string | null;
   effect: "blink" | "shift" | null;
 }
 

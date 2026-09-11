@@ -120,7 +120,12 @@ export default function ThreadView({
           <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(post.author)}>
             {post.author}
           </span>
-          <Badge label={badges[post.author]?.label} color={badges[post.author]?.color} effect={badges[post.author]?.effect} />
+          <Badge
+            label={badges[post.author]?.label}
+            color={badges[post.author]?.color}
+            textColor={badges[post.author]?.textColor}
+            effect={badges[post.author]?.effect}
+          />
           {post.author !== myAlias && (
             <FollowButton compact isFollowing={followingSet.has(post.author)} onToggle={() => onToggleFollow(post.author)} />
           )}
@@ -210,7 +215,12 @@ export default function ThreadView({
               <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(c.author)}>
                 {c.author}
               </span>
-              <Badge label={badges[c.author]?.label} color={badges[c.author]?.color} effect={badges[c.author]?.effect} />
+              <Badge
+                label={badges[c.author]?.label}
+                color={badges[c.author]?.color}
+                textColor={badges[c.author]?.textColor}
+                effect={badges[c.author]?.effect}
+              />
               <span>· {c.time}</span>
             </div>
             <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55 }}>{c.text}</p>

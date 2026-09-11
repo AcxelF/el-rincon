@@ -93,7 +93,7 @@ export default function AdminUserActions({
     const clean = badgeDraft ?? "";
     runAction("/api/admin/badge", { alias, badge: clean }, () => {
       onBadgeChanged();
-      onToast(clean ? `Insignia actualizada para ${alias}` : `Insignia removida de ${alias}`);
+      onToast(clean ? `Rango actualizado para ${alias}` : `Rango removido de ${alias}`);
     });
   }
 
@@ -166,13 +166,13 @@ export default function AdminUserActions({
         ))}
         <input
           className="input"
-          placeholder="Insignia / rango personalizado"
+          placeholder="Rango personalizado"
           value={badgeDraft ?? ""}
           onChange={(e) => setBadgeDraft(e.target.value)}
           style={{ width: 190, minHeight: 32, fontSize: 12.5, background: "var(--color-neutral-100)" }}
         />
         <button className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busy} onClick={saveBadge}>
-          Guardar insignia
+          Guardar rango
         </button>
       </div>
     </div>

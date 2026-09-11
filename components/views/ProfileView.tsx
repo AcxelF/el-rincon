@@ -25,6 +25,7 @@ export default function ProfileView({
   onBadgeChanged,
   badge,
   badgeColor,
+  badgeTextColor,
   badgeEffect,
   bio,
   followers,
@@ -51,6 +52,7 @@ export default function ProfileView({
   onBadgeChanged: () => void;
   badge?: string;
   badgeColor?: string | null;
+  badgeTextColor?: string | null;
   badgeEffect?: "blink" | "shift" | null;
   bio?: string;
   followers: number;
@@ -158,7 +160,7 @@ export default function ProfileView({
           ) : (
             <h1 style={{ margin: "0 0 4px", fontSize: 30, lineHeight: 1.1, color: "var(--color-accent-900)", display: "flex", alignItems: "center", gap: 10 }}>
               {alias}
-              <Badge label={badge} color={badgeColor} effect={badgeEffect} />
+              <Badge label={badge} color={badgeColor} textColor={badgeTextColor} effect={badgeEffect} />
             </h1>
           )}
           <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-accent-900) 70%, transparent)" }}>
@@ -235,6 +237,7 @@ export default function ProfileView({
           isAdmin={isAdmin}
           currentBadge={badge}
           currentColor={badgeColor}
+          currentTextColor={badgeTextColor}
           currentEffect={badgeEffect}
           onToast={onToast}
           onBadgeChanged={onBadgeChanged}

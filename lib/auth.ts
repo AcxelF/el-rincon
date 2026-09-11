@@ -249,24 +249,35 @@ export async function setUserBadge(alias: string, badge: string | null): Promise
 }
 
 export async function getBadgeMap(): Promise<Record<string, BadgeInfo>> {
-  const rows = await getAll<{ alias: string; badge: string; badgeColor: string | null; badgeEffect: string | null }>(
-    "SELECT alias, badge, badge_color as badgeColor, badge_effect as badgeEffect FROM users WHERE badge IS NOT NULL AND badge != ''"
+  const rows = await getAll<{ alias: string; badge: string; badgeColor: string | null; badgeTextColor: string | null; badgeEffect: string | null }>(
+    "SELECT alias, badge, badge_color as badgeColor, badge_text_color as badgeTextColor, badge_effect as badgeEffect FROM users WHERE badge IS NOT NULL AND badge != ''"
   );
   const map: Record<string, BadgeInfo> = {};
   for (const r of rows) {
     map[r.alias] = {
       label: r.badge,
       color: r.badgeColor,
+      textColor: r.badgeTextColor,
       effect: r.badgeEffect === "blink" || r.badgeEffect === "shift" ? r.badgeEffect : null,
     };
   }
   return map;
 }
 
-/** A badge's color/animation is a personal touch the owner picks for themselves — separate
- * from the badge text itself, which only an admin can assign. */
-export async function setUserBadgeStyle(userId: string, color: string | null, effect: "blink" | "shift" | null) {
-  await run("UPDATE users SET badge_color = ?, badge_effect = ? WHERE id = ?", [color, effect, userId]);
+/** A rank's colors are a personal touch the owner picks for themselves — separate from the
+ * rank text itself, which only an admin can assign. The animated effect is admin-only: pass
+ * `effect` as undefined to leave it untouched (used when a non-admin saves their colors). */
+export async function setUserBadgeStyle(
+  userId: string,
+  color: string | null,
+  textColor: string | null,
+  effect?: "blink" | "shift" | null
+) {
+  if (effect === undefined) {
+    await run("UPDATE users SET badge_color = ?, badge_text_color = ? WHERE id = ?", [color, textColor, userId]);
+  } else {
+    await run("UPDATE users SET badge_color = ?, badge_text_color = ?, badge_effect = ? WHERE id = ?", [color, textColor, effect, userId]);
+  }
 }
 
 export interface FollowStats {

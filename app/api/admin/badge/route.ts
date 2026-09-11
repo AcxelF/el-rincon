@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   const badgeRaw = typeof body?.badge === "string" ? body.badge.trim() : "";
 
   if (badgeRaw.length > MAX_BADGE_LENGTH) {
-    return NextResponse.json({ error: `La insignia debe tener ${MAX_BADGE_LENGTH} caracteres o menos.` }, { status: 400 });
+    return NextResponse.json({ error: `El rango debe tener ${MAX_BADGE_LENGTH} caracteres o menos.` }, { status: 400 });
   }
 
   const user = await setUserBadge(alias, badgeRaw || null);

@@ -882,7 +882,12 @@ export default function FeedView({
               <span className="alias-link" style={{ fontWeight: 600, color: "var(--color-text)" }} onClick={() => onViewProfile(p.author)}>
                 {p.author}
               </span>
-              <Badge label={badges[p.author]?.label} color={badges[p.author]?.color} effect={badges[p.author]?.effect} />
+              <Badge
+                label={badges[p.author]?.label}
+                color={badges[p.author]?.color}
+                textColor={badges[p.author]?.textColor}
+                effect={badges[p.author]?.effect}
+              />
               {p.author !== myAlias && (
                 <FollowButton compact isFollowing={followingSet.has(p.author)} onToggle={() => onToggleFollow(p.author)} />
               )}

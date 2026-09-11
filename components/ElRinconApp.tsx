@@ -895,6 +895,7 @@ export default function ElRinconApp({
               onBadgeChanged={refreshBadges}
               badge={badges[profileAlias]?.label}
               badgeColor={badges[profileAlias]?.color ?? null}
+              badgeTextColor={badges[profileAlias]?.textColor ?? null}
               badgeEffect={badges[profileAlias]?.effect ?? null}
               bio={bios[profileAlias]}
               followers={followInfo?.followers ?? 0}

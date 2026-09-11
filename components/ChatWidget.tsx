@@ -264,7 +264,12 @@ export default function ChatWidget({
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                 {chat.alias}
-                <Badge label={badges[chat.alias]?.label} color={badges[chat.alias]?.color} effect={badges[chat.alias]?.effect} />
+                <Badge
+                  label={badges[chat.alias]?.label}
+                  color={badges[chat.alias]?.color}
+                  textColor={badges[chat.alias]?.textColor}
+                  effect={badges[chat.alias]?.effect}
+                />
               </div>
               <div style={{ fontSize: 11, color: "var(--color-accent-2-700)" }}>{chat.status}</div>
             </div>

@@ -350,7 +350,7 @@ function UsersTab({
   const saveBadge = (alias: string) =>
     runAction(alias, "/api/admin/badge", { alias, badge: badgeDrafts[alias] || "" }, () => {
       onBadgeChanged();
-      onToast(badgeDrafts[alias] ? `Insignia actualizada para ${alias}` : `Insignia removida de ${alias}`);
+      onToast(badgeDrafts[alias] ? `Rango actualizado para ${alias}` : `Rango removido de ${alias}`);
     });
 
   if (!users) return <div style={{ ...cardStyle }}>Cargando…</div>;
@@ -407,13 +407,13 @@ function UsersTab({
               ))}
               <input
                 className="input"
-                placeholder="Insignia / rango personalizado"
+                placeholder="Rango personalizado"
                 value={badgeDrafts[u.alias] ?? ""}
                 onChange={(e) => setBadgeDrafts((d) => ({ ...d, [u.alias]: e.target.value }))}
                 style={{ width: 190, minHeight: 32, fontSize: 12.5, background: "var(--color-surface)" }}
               />
               <button className="btn btn-secondary" style={{ minHeight: 32, fontSize: 12.5 }} disabled={busyAlias === u.alias} onClick={() => saveBadge(u.alias)}>
-                Guardar insignia
+                Guardar rango
               </button>
             </div>
 
