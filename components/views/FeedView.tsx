@@ -116,9 +116,18 @@ export default function FeedView({
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const [composeCat, setComposeCat] = useState(defaultCatId);
+  const [prevDefaultCatId, setPrevDefaultCatId] = useState(defaultCatId);
+  const [catManuallyPicked, setCatManuallyPicked] = useState(false);
   const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [catQuery, setCatQuery] = useState("");
   const catMenuRef = useRef<HTMLDivElement>(null);
+
+  // Follow whatever category the sidebar is browsing, unless the user already
+  // chose a different one for the post they're currently writing.
+  if (defaultCatId !== prevDefaultCatId) {
+    setPrevDefaultCatId(defaultCatId);
+    if (!catManuallyPicked) setComposeCat(defaultCatId);
+  }
 
   useEffect(() => {
     if (!attachMenuOpen) return;
@@ -150,6 +159,7 @@ export default function FeedView({
 
   function pickComposeCat(id: string) {
     setComposeCat(id);
+    setCatManuallyPicked(true);
     setCatMenuOpen(false);
     setCatQuery("");
   }
@@ -183,6 +193,7 @@ export default function FeedView({
       setPollEnabled(false);
       setPollOptions(["", ""]);
       setQuestionEnabled(false);
+      setCatManuallyPicked(false);
     }
   }
 
