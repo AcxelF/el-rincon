@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CaretDown, CaretUp, MagnifyingGlass, Star, X } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, MagnifyingGlass, X } from "@phosphor-icons/react";
 import type { Category } from "@/lib/types";
 import { PILL, PILL_ON } from "@/lib/style-helpers";
 import { iconForCategory } from "@/lib/category-icons";
 import { useHoverTooltip } from "@/lib/use-hover-tooltip";
+import FollowButton from "@/components/FollowButton";
 
 const SECTION_LABEL_STYLE = {
   fontSize: 11,
@@ -74,32 +75,7 @@ export default function RailLeft({
           </span>
           <span style={{ fontSize: 11, opacity: 0.6, flex: "none" }}>{counts[c.id] ?? 0}</span>
         </button>
-        {options?.isCareer && (
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label={followed ? `Dejar de seguir ${c.name}` : `Seguir ${c.name}`}
-            title={followed ? `Dejar de seguir ${c.name}` : `Seguir ${c.name}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFollowCategory(c.id);
-            }}
-            style={{
-              display: "grid",
-              placeItems: "center",
-              width: 26,
-              height: 26,
-              flex: "none",
-              border: 0,
-              borderRadius: 999,
-              background: "transparent",
-              color: followed ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 55%, transparent)",
-              cursor: "pointer",
-            }}
-          >
-            <Star size={16} weight={followed ? "fill" : "regular"} />
-          </button>
-        )}
+        {options?.isCareer && <FollowButton compact isFollowing={followed} onToggle={() => onToggleFollowCategory(c.id)} />}
       </div>
     );
   }
