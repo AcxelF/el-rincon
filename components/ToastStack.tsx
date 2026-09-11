@@ -4,6 +4,7 @@ export interface ToastItem {
   id: number;
   message: string;
   leaving?: boolean;
+  action?: { label: string; onClick: () => void };
 }
 
 export default function ToastStack({ toasts }: { toasts: ToastItem[] }) {
@@ -28,16 +29,39 @@ export default function ToastStack({ toasts }: { toasts: ToastItem[] }) {
           className="toast-item"
           data-leaving={t.leaving ? "true" : undefined}
           style={{
-            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: t.action ? "8px 8px 8px 16px" : "10px 16px",
             borderRadius: 999,
             background: "var(--color-neutral-900)",
             color: "var(--color-neutral-100)",
             fontSize: 13.5,
             fontWeight: 600,
             boxShadow: "var(--shadow-md)",
+            pointerEvents: t.action ? "auto" : "none",
           }}
         >
-          {t.message}
+          <span>{t.message}</span>
+          {t.action && (
+            <button
+              type="button"
+              onClick={t.action.onClick}
+              style={{
+                flex: "none",
+                border: 0,
+                borderRadius: 999,
+                padding: "7px 14px",
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+                background: "var(--color-accent)",
+                color: "var(--color-neutral-100)",
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
         </div>
       ))}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/components/Header";
 import RailLeft from "@/components/RailLeft";
 import RailRight from "@/components/RailRight";
@@ -85,6 +85,52 @@ export default function ElRinconApp({
       }, 200);
     }, 2600);
   }
+
+  const updateToastShownRef = useRef(false);
+
+  useEffect(() => {
+    let initialBuildId: string | null = null;
+
+    async function fetchBuildId(): Promise<string | null> {
+      try {
+        const res = await fetch("/api/version", { cache: "no-store" });
+        const data = await res.json();
+        return typeof data.buildId === "string" ? data.buildId : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function checkForUpdate() {
+      if (updateToastShownRef.current || !initialBuildId) return;
+      const buildId = await fetchBuildId();
+      if (buildId && buildId !== "dev" && buildId !== initialBuildId) {
+        updateToastShownRef.current = true;
+        const id = Date.now() + Math.random();
+        setToasts((ts) => [
+          ...ts,
+          { id, message: "Hay una actualización disponible.", action: { label: "Actualizar", onClick: () => window.location.reload() } },
+        ]);
+      }
+    }
+
+    fetchBuildId().then((id) => {
+      initialBuildId = id;
+    });
+
+    const interval = setInterval(checkForUpdate, 5 * 60 * 1000);
+    function onVisibility() {
+      if (document.visibilityState === "visible") checkForUpdate();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", checkForUpdate);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", checkForUpdate);
+    };
+  }, []);
 
   async function refreshPosts() {
     try {
