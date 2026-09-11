@@ -12,6 +12,7 @@ import AnonToggleButton from "@/components/AnonToggleButton";
 
 const SORTS: SortMode[] = ["Recientes", "Populares"];
 const MAX_POLL_OPTIONS = 4;
+const FEED_EXCERPT_LIMIT = 240;
 
 function categoryTagIcon(id: string, emoji?: string) {
   const Icon = iconForCategory(id);
@@ -582,7 +583,20 @@ export default function FeedView({
               {p.title}
             </h2>
             {p.excerpt !== p.title && (
-              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>{p.excerpt}</p>
+              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
+                {p.excerpt.length > FEED_EXCERPT_LIMIT ? p.excerpt.slice(0, FEED_EXCERPT_LIMIT).trimEnd() + "…" : p.excerpt}
+                {p.excerpt.length > FEED_EXCERPT_LIMIT && (
+                  <>
+                    {" "}
+                    <span
+                      onClick={() => onOpenPost(p.id)}
+                      style={{ color: "var(--color-accent)", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Ver más
+                    </span>
+                  </>
+                )}
+              </p>
             )}
             {p.poll && <Poll poll={p.poll} onVote={(optionId) => onVotePoll(p.id, optionId)} />}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>
