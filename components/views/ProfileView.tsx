@@ -35,6 +35,8 @@ export default function ProfileView({
   following,
   isFollowing,
   onToggleFollow,
+  isBlocked,
+  onToggleBlock,
   karma,
   commentCount,
   rank,
@@ -64,6 +66,8 @@ export default function ProfileView({
   following: number;
   isFollowing: boolean;
   onToggleFollow: () => Promise<void>;
+  isBlocked: boolean;
+  onToggleBlock: () => void;
   karma: number;
   commentCount: number;
   rank: number;
@@ -78,6 +82,24 @@ export default function ProfileView({
   const [draftBio, setDraftBio] = useState(bio ?? "");
   const [bioError, setBioError] = useState("");
   const [savingBio, setSavingBio] = useState(false);
+
+  const [newRecoveryCode, setNewRecoveryCode] = useState<string | null>(null);
+  const [generatingCode, setGeneratingCode] = useState(false);
+
+  async function generateRecoveryCode() {
+    setGeneratingCode(true);
+    try {
+      const res = await fetch("/api/profile/recovery-code", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        onToast(data.error || "No se pudo generar el código.");
+        return;
+      }
+      setNewRecoveryCode(data.code);
+    } finally {
+      setGeneratingCode(false);
+    }
+  }
 
   function startEditing() {
     setDraftAlias(alias);
@@ -218,6 +240,9 @@ export default function ProfileView({
                 <button className="btn btn-secondary" onClick={startEditing}>
                   Editar nombre de usuario
                 </button>
+                <button className="btn btn-secondary" disabled={generatingCode} onClick={generateRecoveryCode}>
+                  Generar código de recuperación
+                </button>
                 <button className="btn btn-secondary" onClick={onLogout}>
                   Cerrar sesión
                 </button>
@@ -228,8 +253,54 @@ export default function ProfileView({
                 <button className="btn btn-secondary" onClick={onMessage}>
                   💬 Mensaje
                 </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ color: isBlocked ? undefined : "var(--color-accent-2-700)" }}
+                  onClick={onToggleBlock}
+                >
+                  {isBlocked ? "Desbloquear" : "🚫 Bloquear"}
+                </button>
               </>
             )}
+          </div>
+        )}
+        {newRecoveryCode && (
+          <div
+            style={{
+              width: "100%",
+              marginTop: 10,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              padding: "12px 14px",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-neutral-100)",
+            }}
+          >
+            <div style={{ fontSize: 12.5, color: "var(--color-text)" }}>
+              Guarda este código — reemplaza al anterior y es la única forma de recuperar tu cuenta si olvidas tu contraseña:
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                className="input"
+                readOnly
+                value={newRecoveryCode}
+                style={{ flex: 1, minHeight: 36, fontFamily: "monospace", fontSize: 13.5, textAlign: "center", background: "var(--color-neutral-200)" }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(newRecoveryCode).catch(() => {});
+                  onToast("Código copiado");
+                }}
+              >
+                Copiar
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setNewRecoveryCode(null)}>
+                Cerrar
+              </button>
+            </div>
           </div>
         )}
       </div>

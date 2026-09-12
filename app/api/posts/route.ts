@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByAlias, getUserFromRequest, normalizeAlias } from "@/lib/auth";
-import { createPost, listPosts, listPostsByAuthor } from "@/lib/posts";
+import { createPost, listPosts, listPostsByAuthor, POSTS_PAGE_SIZE } from "@/lib/posts";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { CATEGORIES } from "@/lib/mock-data";
 
@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ posts: await listPostsByAuthor(author.id, viewer?.id ?? null, includeAnon) });
   }
 
-  return NextResponse.json({ posts: await listPosts(viewer?.id ?? null) });
+  const limitRaw = Number(request.nextUrl.searchParams.get("limit"));
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : POSTS_PAGE_SIZE;
+  const { posts, hasMore } = await listPosts(viewer?.id ?? null, limit);
+  return NextResponse.json({ posts, hasMore });
 }
 
 export async function POST(request: NextRequest) {

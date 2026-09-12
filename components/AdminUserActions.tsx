@@ -27,6 +27,7 @@ export default function AdminUserActions({
   const [busy, setBusy] = useState(false);
   const [durationIndex, setDurationIndex] = useState(0);
   const [badgeDraft, setBadgeDraft] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState<string | null>(null);
 
   function refresh() {
     fetch("/api/admin/users")
@@ -45,6 +46,7 @@ export default function AdminUserActions({
     refresh();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setBadgeDraft(null);
+    setResetPassword(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alias]);
 
@@ -95,6 +97,26 @@ export default function AdminUserActions({
       onBadgeChanged();
       onToast(clean ? `Rango actualizado para ${alias}` : `Rango removido de ${alias}`);
     });
+  }
+
+  async function resetPasswordAction() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "No se pudo resetear la contraseña.");
+        return;
+      }
+      setResetPassword(data.newPassword);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -151,7 +173,35 @@ export default function AdminUserActions({
         >
           {info.isBanned ? "Desbanear" : "Banear"}
         </button>
+        <button className="btn btn-secondary" style={{ minHeight: 34, fontSize: 12.5 }} disabled={busy} onClick={resetPasswordAction}>
+          Resetear contraseña
+        </button>
       </div>
+
+      {resetPassword && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "var(--color-neutral-100)" }}>
+          <div style={{ fontSize: 12.5 }}>
+            Nueva contraseña para <strong>{alias}</strong> — pásasela ahora, no se volverá a mostrar:
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input className="input" readOnly value={resetPassword} style={{ flex: 1, minHeight: 32, fontSize: 13, fontFamily: "monospace", background: "var(--color-neutral-200)" }} />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ minHeight: 32, fontSize: 12.5 }}
+              onClick={() => {
+                navigator.clipboard.writeText(resetPassword).catch(() => {});
+                onToast("Contraseña copiada");
+              }}
+            >
+              Copiar
+            </button>
+            <button type="button" className="btn btn-ghost" style={{ minHeight: 32, fontSize: 12.5 }} onClick={() => setResetPassword(null)}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         {BADGE_PRESETS.map((preset) => (

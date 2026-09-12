@@ -43,6 +43,7 @@ const SCHEMA_STATEMENTS = [
     badge_effect TEXT,
     name_color TEXT,
     name_effect TEXT,
+    recovery_code_hash TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS sessions (
@@ -55,6 +56,12 @@ const SCHEMA_STATEMENTS = [
     followee_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (follower_id, followee_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS user_blocks (
+    blocker_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (blocker_id, blocked_id)
   )`,
   `CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,7 +76,8 @@ const SCHEMA_STATEMENTS = [
     is_question INTEGER NOT NULL DEFAULT 0,
     best_answer_id INTEGER,
     pinned INTEGER NOT NULL DEFAULT 0,
-    image_url TEXT
+    image_url TEXT,
+    edited_at TEXT
   )`,
   `CREATE TABLE IF NOT EXISTS poll_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -162,7 +170,7 @@ async function migrate() {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`);
     }
   }
-  for (const column of ["badge", "bio", "badge_color", "badge_text_color", "badge_effect", "name_color", "name_effect"]) {
+  for (const column of ["badge", "bio", "badge_color", "badge_text_color", "badge_effect", "name_color", "name_effect", "recovery_code_hash"]) {
     if (!userColumns.includes(column)) {
       await db.execute(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
     }
@@ -183,6 +191,9 @@ async function migrate() {
   const postColumns = (await db.execute("PRAGMA table_info(posts)")).rows.map((r) => r.name as string);
   if (!postColumns.includes("image_url")) {
     await db.execute(`ALTER TABLE posts ADD COLUMN image_url TEXT`);
+  }
+  if (!postColumns.includes("edited_at")) {
+    await db.execute(`ALTER TABLE posts ADD COLUMN edited_at TEXT`);
   }
 }
 

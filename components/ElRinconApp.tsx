@@ -19,6 +19,8 @@ import type { AppNotification, BadgeInfo, Category, Chat, DecoratedPost, Ranking
 
 const THEME_KEY = "rincon-theme";
 const FOLLOWED_CATEGORIES_KEY = "rincon-followed-categories";
+const POSTS_PAGE_SIZE = 20;
+const DRAFT_KEY = "rincon-post-draft";
 
 interface ProfileStats {
   karma: number;
@@ -62,6 +64,10 @@ export default function ElRinconApp({
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [posts, setPosts] = useState<DecoratedPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsLimit, setPostsLimit] = useState(POSTS_PAGE_SIZE);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const [openPost, setOpenPost] = useState<DecoratedPost | null>(null);
   const [threadComments, setThreadComments] = useState<import("@/lib/types").DecoratedComment[]>([]);
   const [liveRanking, setLiveRanking] = useState<RankingUser[]>([]);
@@ -74,6 +80,7 @@ export default function ElRinconApp({
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [followInfo, setFollowInfo] = useState<{ followers: number; following: number; isFollowing: boolean } | null>(null);
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
+  const [blockedSet, setBlockedSet] = useState<Set<string>>(new Set());
   const [followedCategoryIds, setFollowedCategoryIds] = useState<string[]>([]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -139,11 +146,31 @@ export default function ElRinconApp({
 
   async function refreshPosts() {
     try {
-      const res = await fetch("/api/posts");
+      const res = await fetch(`/api/posts?limit=${postsLimit}`);
       const data = await res.json();
       setPosts(data.posts || []);
+      setHasMorePosts(!!data.hasMore);
     } catch {
       // keep whatever posts we already have
+    } finally {
+      setPostsLoading(false);
+    }
+  }
+
+  async function loadMorePosts() {
+    if (loadingMorePosts || !hasMorePosts) return;
+    setLoadingMorePosts(true);
+    const nextLimit = postsLimit + POSTS_PAGE_SIZE;
+    try {
+      const res = await fetch(`/api/posts?limit=${nextLimit}`);
+      const data = await res.json();
+      setPosts(data.posts || []);
+      setHasMorePosts(!!data.hasMore);
+      setPostsLimit(nextLimit);
+    } catch {
+      // keep whatever posts we already have
+    } finally {
+      setLoadingMorePosts(false);
     }
   }
 
@@ -210,6 +237,15 @@ export default function ElRinconApp({
       });
   }
 
+  function refreshBlocked() {
+    fetch("/api/block/mine")
+      .then((r) => r.json())
+      .then((data) => setBlockedSet(new Set<string>(data.blocked || [])))
+      .catch(() => {
+        // keep whatever block info we already have
+      });
+  }
+
   useEffect(() => {
     // Synced from localStorage (an external system) once on mount — the layout's
     // blocking script already painted the body attribute, this just aligns the icon.
@@ -222,18 +258,43 @@ export default function ElRinconApp({
     }
     try {
       const savedCats = window.localStorage.getItem(FOLLOWED_CATEGORIES_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (savedCats) setFollowedCategoryIds(JSON.parse(savedCats));
     } catch {
       // localStorage unavailable — no followed categories yet
     }
+    try {
+      const savedDraft = window.localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (typeof parsed.text === "string") setDraft(parsed.text);
+        if (typeof parsed.title === "string") setDraftTitle(parsed.title);
+        if (typeof parsed.imageUrl === "string") setDraftImageUrl(parsed.imageUrl);
+      }
+    } catch {
+      // localStorage unavailable, or a corrupt draft — start with an empty composer
+    }
     refreshBadges();
     refreshBios();
     refreshFollowing();
+    refreshBlocked();
     refreshPosts();
     refreshRanking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keeps the composer's content alive across accidental closes/reloads — cleared once the
+  // post actually publishes. Poll options and toggles aren't persisted, only the core content.
+  useEffect(() => {
+    try {
+      if (!draft.trim() && !draftTitle.trim() && !draftImageUrl) {
+        window.localStorage.removeItem(DRAFT_KEY);
+      } else {
+        window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ text: draft, title: draftTitle, imageUrl: draftImageUrl }));
+      }
+    } catch {
+      // localStorage unavailable — the draft just won't survive a reload
+    }
+  }, [draft, draftTitle, draftImageUrl]);
 
   useEffect(() => {
     if (isGuest) return;
@@ -346,14 +407,13 @@ export default function ElRinconApp({
 
   const feedPosts = useMemo(() => {
     const activeLabel = cat === "all" ? null : categoryLabel(cat);
-    let list = activeLabel ? posts.filter((p) => p.cat === activeLabel) : posts.slice();
+    let list = (activeLabel ? posts.filter((p) => p.cat === activeLabel) : posts.slice()).filter((p) => !blockedSet.has(p.author));
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
         (p) => p.title.toLowerCase().includes(q) || p.excerpt.toLowerCase().includes(q) || p.body.toLowerCase().includes(q) || p.author.toLowerCase().includes(q)
       );
     }
-    if (sort === "Recientes") list = list.slice().reverse();
     if (sort === "Populares") {
       const engagement = (p: DecoratedPost) => p.votes + p.likes + p.commentCount * 2;
       list = list.slice().sort((a, b) => engagement(b) - engagement(a));
@@ -362,7 +422,7 @@ export default function ElRinconApp({
     const rest = list.filter((p) => !p.pinned);
     return [...pinned, ...rest];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, cat, sort, search, categories]);
+  }, [posts, cat, sort, search, categories, blockedSet]);
 
   const matchingCategories = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -431,6 +491,28 @@ export default function ElRinconApp({
       return next;
     });
     if (targetAlias === profileAlias) setFollowInfo(data);
+  }
+
+  async function toggleBlock(targetAlias: string) {
+    if (!requireAuth()) return;
+    const nextBlock = !blockedSet.has(targetAlias);
+    const res = await fetch("/api/block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ alias: targetAlias, block: nextBlock }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      pushToast(data.error || "No se pudo actualizar. Intenta de nuevo.");
+      return;
+    }
+    setBlockedSet((prev) => {
+      const next = new Set(prev);
+      if (data.isBlocked) next.add(targetAlias);
+      else next.delete(targetAlias);
+      return next;
+    });
+    pushToast(data.isBlocked ? `${targetAlias} fue bloqueado` : `${targetAlias} fue desbloqueado`);
   }
 
   function viewProfile(targetAlias: string) {
@@ -625,6 +707,19 @@ export default function ElRinconApp({
     await refreshPosts();
     if (isAdmin) await refreshReports();
     if (view === "thread" && openId === id) setView("feed");
+  }
+
+  async function editPost(id: number, opts: { title: string; text: string }): Promise<string | undefined> {
+    const res = await fetch(`/api/posts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(opts),
+    });
+    const data = await res.json();
+    if (!res.ok) return data.error || "No se pudo guardar los cambios.";
+    setPosts((prev) => prev.map((p) => (p.id === id ? data.post : p)));
+    if (openPost?.id === id) setOpenPost(data.post);
+    return undefined;
   }
 
   async function deleteComment(postId: number, commentId: number) {
@@ -872,12 +967,17 @@ export default function ElRinconApp({
               sort={sort}
               onSortChange={setSort}
               posts={feedPosts}
+              postsLoading={postsLoading}
+              hasMorePosts={hasMorePosts}
+              loadingMorePosts={loadingMorePosts}
+              onLoadMore={loadMorePosts}
               onOpenPost={openThread}
               onVote={vote}
               onToggleLike={toggleLike}
               myInitials={myInitials}
               isAdmin={isAdmin}
               onDeletePost={deletePost}
+              onEditPost={editPost}
               onTogglePin={togglePin}
               onReportPost={reportPost}
               onVotePoll={votePoll}
@@ -909,6 +1009,7 @@ export default function ElRinconApp({
               myInitials={myInitials}
               isAdmin={isAdmin}
               onDeletePost={() => deletePost(openPost.id)}
+              onEditPost={(opts) => editPost(openPost.id, opts)}
               onDeleteComment={(commentId) => deleteComment(openPost.id, commentId)}
               onTogglePin={() => togglePin(openPost.id)}
               onReportPost={() => reportPost(openPost.id)}
@@ -957,6 +1058,8 @@ export default function ElRinconApp({
               following={followInfo?.following ?? 0}
               isFollowing={followInfo?.isFollowing ?? false}
               onToggleFollow={() => toggleFollow(profileAlias)}
+              isBlocked={blockedSet.has(profileAlias)}
+              onToggleBlock={() => toggleBlock(profileAlias)}
               karma={profileStats.karma}
               commentCount={profileStats.commentCount}
               rank={isOwnProfile ? myRank : profileStats.rank}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, ChatCircle, Heart, ArrowFatUp } from "@phosphor-icons/react";
+import { Bell, ChatCircle, Heart, ArrowFatUp, Flag } from "@phosphor-icons/react";
 import type { AppNotification } from "@/lib/types";
 
 const ICON_FOR: Record<AppNotification["type"], React.ReactNode> = {
@@ -9,6 +9,7 @@ const ICON_FOR: Record<AppNotification["type"], React.ReactNode> = {
   like: <Heart size={15} weight="fill" />,
   comment: <ChatCircle size={15} weight="fill" />,
   commentLike: <Heart size={15} weight="fill" />,
+  report: <Flag size={15} weight="fill" />,
 };
 
 const TINT_FOR: Record<AppNotification["type"], string> = {
@@ -16,6 +17,7 @@ const TINT_FOR: Record<AppNotification["type"], string> = {
   like: "var(--color-accent-2-700)",
   comment: "var(--color-brand-orange)",
   commentLike: "var(--color-accent-2-700)",
+  report: "var(--color-accent-2-800)",
 };
 
 export default function NotificationBell({

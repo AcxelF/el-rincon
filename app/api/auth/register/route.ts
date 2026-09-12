@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({
     user: { alias: user.alias, isAdmin: user.isAdmin, isBanned: user.isBanned, isMuted: user.isMuted, badge: user.badge },
+    recoveryCode: user.recoveryCode,
   });
   response.cookies.set(SESSION_COOKIE_NAME, session.token, {
     httpOnly: true,

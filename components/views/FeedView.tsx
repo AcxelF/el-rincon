@@ -86,12 +86,17 @@ export default function FeedView({
   sort,
   onSortChange,
   posts,
+  postsLoading,
+  hasMorePosts,
+  loadingMorePosts,
+  onLoadMore,
   onOpenPost,
   onVote,
   onToggleLike,
   myInitials,
   isAdmin,
   onDeletePost,
+  onEditPost,
   onTogglePin,
   onReportPost,
   onVotePoll,
@@ -128,12 +133,17 @@ export default function FeedView({
   sort: SortMode;
   onSortChange: (s: SortMode) => void;
   posts: DecoratedPost[];
+  postsLoading: boolean;
+  hasMorePosts: boolean;
+  loadingMorePosts: boolean;
+  onLoadMore: () => void;
   onOpenPost: (id: number) => void;
   onVote: (id: number, dir: 1 | -1) => void;
   onToggleLike: (id: number) => void;
   myInitials: string;
   isAdmin: boolean;
   onDeletePost: (id: number) => void;
+  onEditPost: (id: number, opts: { title: string; text: string }) => Promise<string | undefined>;
   onTogglePin: (id: number) => void;
   onReportPost: (id: number) => void;
   onVotePoll: (postId: number, optionId: number) => void;
@@ -147,6 +157,11 @@ export default function FeedView({
   const [shareState, setShareState] = useState<{ id: number; label: string } | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const draftBodyRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastSyncedDraftRef = useRef<string>(draft);
@@ -354,6 +369,25 @@ export default function FeedView({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (file) onUploadImage(file);
+  }
+
+  function startEdit(p: DecoratedPost) {
+    setEditingPostId(p.id);
+    setEditTitle(p.title);
+    setEditText(p.body);
+    setEditError("");
+  }
+
+  async function saveEdit(id: number) {
+    setEditSaving(true);
+    setEditError("");
+    const err = await onEditPost(id, { title: editTitle, text: editText });
+    setEditSaving(false);
+    if (err) {
+      setEditError(err);
+      return;
+    }
+    setEditingPostId(null);
   }
 
   async function handlePublish() {
@@ -940,7 +974,15 @@ export default function FeedView({
 
       {isSearching && posts.length > 0 && <div style={SEARCH_SECTION_LABEL}>Publicaciones</div>}
 
-      {posts.length === 0 && matchingUsers.length === 0 && matchingCategories.length === 0 && (
+      {postsLoading && posts.length === 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="skeleton-pulse" style={{ height: 120, borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)" }} />
+          ))}
+        </div>
+      )}
+
+      {!postsLoading && posts.length === 0 && matchingUsers.length === 0 && matchingCategories.length === 0 && (
         <div style={{ padding: "28px 22px", textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>{emptyMessage}</div>
       )}
 
@@ -979,26 +1021,62 @@ export default function FeedView({
               )}
               <span>· {p.time}</span>
             </div>
-            <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, cursor: "pointer" }} onClick={() => onOpenPost(p.id)}>
-              {stripFormatMarkers(p.title)}
-            </h2>
-            {p.excerpt !== p.title && (
-              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
-                {renderFormattedText(
-                  p.excerpt.length > FEED_EXCERPT_LIMIT ? p.excerpt.slice(0, FEED_EXCERPT_LIMIT).trimEnd() + "…" : p.excerpt
-                )}
-                {p.excerpt.length > FEED_EXCERPT_LIMIT && (
-                  <>
-                    {" "}
-                    <span
-                      onClick={() => onOpenPost(p.id)}
-                      style={{ color: "var(--color-accent)", fontWeight: 600, cursor: "pointer" }}
-                    >
-                      Ver más
+            {editingPostId === p.id ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input
+                  className="input"
+                  placeholder="Título (opcional)"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  style={{ background: "var(--color-neutral-100)", fontSize: 15, fontWeight: 600 }}
+                  maxLength={120}
+                />
+                <textarea
+                  className="input"
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  style={{ background: "var(--color-neutral-100)", fontSize: 14.5, minHeight: 90, resize: "vertical" }}
+                  maxLength={2000}
+                />
+                {editError && <div style={{ fontSize: 12.5, color: "var(--color-accent-2-700)" }}>{editError}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-primary" style={{ minHeight: 34, fontSize: 13 }} disabled={editSaving || !editText.trim()} onClick={() => saveEdit(p.id)}>
+                    {editSaving ? "Guardando…" : "Guardar"}
+                  </button>
+                  <button className="btn btn-secondary" style={{ minHeight: 34, fontSize: 13 }} disabled={editSaving} onClick={() => setEditingPostId(null)}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.2, cursor: "pointer" }} onClick={() => onOpenPost(p.id)}>
+                  {stripFormatMarkers(p.title)}
+                  {p.edited && (
+                    <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 8, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+                      (editado)
                     </span>
-                  </>
+                  )}
+                </h2>
+                {p.excerpt !== p.title && (
+                  <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
+                    {renderFormattedText(
+                      p.excerpt.length > FEED_EXCERPT_LIMIT ? p.excerpt.slice(0, FEED_EXCERPT_LIMIT).trimEnd() + "…" : p.excerpt
+                    )}
+                    {p.excerpt.length > FEED_EXCERPT_LIMIT && (
+                      <>
+                        {" "}
+                        <span
+                          onClick={() => onOpenPost(p.id)}
+                          style={{ color: "var(--color-accent)", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          Ver más
+                        </span>
+                      </>
+                    )}
+                  </p>
                 )}
-              </p>
+              </>
             )}
             {p.imageUrl && (
               <img
@@ -1046,10 +1124,19 @@ export default function FeedView({
                   {p.pinned ? "📌 Quitar" : "📌 Fijar"}
                 </button>
               )}
+              {p.isMine && editingPostId !== p.id && (
+                <button
+                  className="btn btn-ghost"
+                  style={{ minHeight: 34, fontSize: 13, marginLeft: isAdmin ? undefined : "auto" }}
+                  onClick={() => startEdit(p)}
+                >
+                  ✏️ Editar
+                </button>
+              )}
               {(isAdmin || p.isMine) && (
                 <button
                   className="btn btn-ghost"
-                  style={{ minHeight: 34, fontSize: 13, marginLeft: isAdmin ? undefined : "auto", color: "var(--color-accent-2-700)" }}
+                  style={{ minHeight: 34, fontSize: 13, color: "var(--color-accent-2-700)" }}
                   onClick={() => setPendingDeleteId(p.id)}
                 >
                   {p.isMine ? "🗑 Eliminar" : "🗑 Eliminar (admin)"}
@@ -1059,6 +1146,17 @@ export default function FeedView({
           </div>
         </article>
       ))}
+
+      {hasMorePosts && (
+        <button
+          className="btn btn-secondary"
+          style={{ alignSelf: "center", minWidth: 160 }}
+          onClick={onLoadMore}
+          disabled={loadingMorePosts}
+        >
+          {loadingMorePosts ? "Cargando…" : "Cargar más"}
+        </button>
+      )}
 
       <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       <ConfirmDialog

@@ -38,6 +38,7 @@ interface PostRow {
   isQuestion: number;
   bestAnswerId: number | null;
   pinned: number;
+  editedAt: string | null;
   votes: number;
   likes: number;
   voteValue: number | null;
@@ -50,7 +51,7 @@ const POST_SELECT = `
   SELECT
     p.id as id, p.cat as cat, p.author as author, p.author_user_id as authorUserId,
     p.created_at as createdAt, p.title as title, p.excerpt as excerpt, p.body as body, p.image_url as imageUrl,
-    p.is_question as isQuestion, p.best_answer_id as bestAnswerId, p.pinned as pinned,
+    p.is_question as isQuestion, p.best_answer_id as bestAnswerId, p.pinned as pinned, p.edited_at as editedAt,
     COALESCE((SELECT SUM(value) FROM post_votes WHERE post_id = p.id), 0) as votes,
     COALESCE((SELECT COUNT(*) FROM post_likes WHERE post_id = p.id), 0) as likes,
     (SELECT value FROM post_votes WHERE post_id = p.id AND user_id = :viewer) as voteValue,
@@ -103,12 +104,19 @@ async function decorateRow(row: PostRow, viewerUserId: string | null): Promise<D
     isQuestion: !!row.isQuestion,
     bestAnswerId: row.bestAnswerId ?? null,
     isMine: viewerUserId !== null && row.authorUserId === viewerUserId,
+    edited: !!row.editedAt,
   };
 }
 
-export async function listPosts(viewerUserId: string | null): Promise<DecoratedPost[]> {
-  const rows = await getAll<PostRow>(POST_SELECT + " ORDER BY p.id ASC", { viewer: viewerUserId });
-  return Promise.all(rows.map((r) => decorateRow(r, viewerUserId)));
+export const POSTS_PAGE_SIZE = 20;
+
+/** Returns the `limit` most recent posts (newest first), plus whether more exist beyond that.
+ * Fetches one extra row to answer `hasMore` without a separate COUNT query. */
+export async function listPosts(viewerUserId: string | null, limit: number = POSTS_PAGE_SIZE): Promise<{ posts: DecoratedPost[]; hasMore: boolean }> {
+  const rows = await getAll<PostRow>(POST_SELECT + " ORDER BY p.id DESC LIMIT :limit", { viewer: viewerUserId, limit: limit + 1 });
+  const hasMore = rows.length > limit;
+  const page = rows.slice(0, limit);
+  return { posts: await Promise.all(page.map((r) => decorateRow(r, viewerUserId))), hasMore };
 }
 
 export async function getPost(id: number, viewerUserId: string | null): Promise<DecoratedPost | undefined> {
@@ -238,6 +246,20 @@ export async function createPost(opts: {
   return postId;
 }
 
+/** Edits a post's title/body/category in place and stamps it as edited. Poll options and the
+ * attached image are intentionally left alone — editing those mid-thread would invalidate votes
+ * already cast or require re-uploading, which is out of scope for a typo fix. */
+export async function updatePost(postId: number, opts: { text: string; title?: string; cat?: string }): Promise<void> {
+  const title = opts.title?.trim() || (opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text);
+  const sets = ["title = :title", "excerpt = :excerpt", "body = :body", "edited_at = datetime('now')"];
+  const args: Record<string, string | number> = { postId, title, excerpt: opts.text, body: opts.text };
+  if (opts.cat !== undefined) {
+    sets.push("cat = :cat");
+    args.cat = opts.cat;
+  }
+  await run(`UPDATE posts SET ${sets.join(", ")} WHERE id = :postId`, args);
+}
+
 /** Keeps this user's already-published (non-anonymous) posts and comments showing their current alias after a rename. */
 export async function renameAuthorEverywhere(userId: string, alias: string): Promise<void> {
   await run("UPDATE posts SET author = :alias WHERE author_user_id = :userId AND is_anon = 0", { alias, userId });
@@ -341,12 +363,26 @@ export async function toggleBestAnswer(postId: number, commentId: number): Promi
   await run("UPDATE posts SET best_answer_id = :next WHERE id = :postId", { postId, next });
 }
 
+async function notifyAdminsOfReport(postId: number, message: string): Promise<void> {
+  const admins = await getAll<{ id: string }>("SELECT id FROM users WHERE is_admin = 1");
+  for (const admin of admins) {
+    await run("INSERT INTO notifications (user_id, type, post_id, message) VALUES (:userId, 'report', :postId, :message)", {
+      userId: admin.id,
+      postId,
+      message,
+    });
+  }
+}
+
 export async function reportPost(postId: number): Promise<{ ok: boolean; error?: string }> {
-  const post = await getOne("SELECT 1 as x FROM posts WHERE id = :postId", { postId });
+  const post = await getOne<{ title: string }>("SELECT title FROM posts WHERE id = :postId", { postId });
   if (!post) return { ok: false, error: "La publicación no existe." };
 
   const existing = await getOne("SELECT 1 as x FROM reports WHERE kind = 'post' AND post_id = :postId", { postId });
-  if (!existing) await run("INSERT INTO reports (kind, post_id) VALUES ('post', :postId)", { postId });
+  if (!existing) {
+    await run("INSERT INTO reports (kind, post_id) VALUES ('post', :postId)", { postId });
+    await notifyAdminsOfReport(postId, `Reportaron el hilo "${stripFormatMarkers(post.title)}".`);
+  }
   return { ok: true };
 }
 
@@ -355,7 +391,10 @@ export async function reportComment(postId: number, commentId: number): Promise<
   if (!comment) return { ok: false, error: "El comentario no existe." };
 
   const existing = await getOne("SELECT 1 as x FROM reports WHERE kind = 'comment' AND comment_id = :commentId", { commentId });
-  if (!existing) await run("INSERT INTO reports (kind, post_id, comment_id) VALUES ('comment', :postId, :commentId)", { postId, commentId });
+  if (!existing) {
+    await run("INSERT INTO reports (kind, post_id, comment_id) VALUES ('comment', :postId, :commentId)", { postId, commentId });
+    await notifyAdminsOfReport(postId, "Reportaron un comentario.");
+  }
   return { ok: true };
 }
 

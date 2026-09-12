@@ -130,7 +130,7 @@ export async function isAliasOrHandleTaken(candidate: string, excludeUserId?: st
   return !!row;
 }
 
-export async function createUser(alias: string, password: string, isAdmin = false): Promise<AuthUser> {
+export async function createUser(alias: string, password: string, isAdmin = false): Promise<AuthUser & { recoveryCode: string }> {
   const id = randomUUID();
   await run("INSERT INTO users (id, alias, login_username, password_hash, is_admin) VALUES (?, ?, ?, ?, ?)", [
     id,
@@ -139,7 +139,69 @@ export async function createUser(alias: string, password: string, isAdmin = fals
     hashPassword(password),
     isAdmin ? 1 : 0,
   ]);
-  return { id, alias, isAdmin, isBanned: false, isMuted: false, bannedUntil: null, mutedUntil: null, badge: null, bio: null };
+  const recoveryCode = await setRecoveryCode(id);
+  return { id, alias, isAdmin, isBanned: false, isMuted: false, bannedUntil: null, mutedUntil: null, badge: null, bio: null, recoveryCode };
+}
+
+const RECOVERY_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O/1/I/L — hard to mistype or misread
+
+function generateRecoveryCode(): { raw: string; display: string } {
+  let raw = "";
+  for (let i = 0; i < 16; i++) raw += RECOVERY_CHARS[Math.floor(Math.random() * RECOVERY_CHARS.length)];
+  const display = raw.match(/.{1,4}/g)!.join("-");
+  return { raw, display };
+}
+
+function normalizeRecoveryCode(input: string): string {
+  return input.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
+
+/** Generates a new recovery code for this account, invalidating whatever code it had before
+ * (single-use), and returns the plaintext once so it can be shown to the owner — never stored. */
+export async function setRecoveryCode(userId: string): Promise<string> {
+  const { raw, display } = generateRecoveryCode();
+  await run("UPDATE users SET recovery_code_hash = ? WHERE id = ?", [hashPassword(raw), userId]);
+  return display;
+}
+
+/** Self-service password reset: matches the account by its login handle or current alias, then
+ * checks the supplied code against the stored recovery-code hash. On success the code is
+ * consumed (cleared) and every existing session is invalidated, same as an admin reset. */
+export async function resetPasswordWithRecoveryCode(
+  loginInput: string,
+  code: string,
+  newPassword: string
+): Promise<{ ok: boolean; error?: string }> {
+  const row = await getOne<{ id: string; recoveryCodeHash: string | null }>(
+    "SELECT id, recovery_code_hash as recoveryCodeHash FROM users WHERE login_username = ? COLLATE NOCASE OR alias = ? COLLATE NOCASE",
+    [loginInput, loginInput]
+  );
+  if (!row?.recoveryCodeHash || !verifyPassword(normalizeRecoveryCode(code), row.recoveryCodeHash)) {
+    return { ok: false, error: "Código de recuperación inválido." };
+  }
+  await run("UPDATE users SET password_hash = ?, recovery_code_hash = NULL WHERE id = ?", [hashPassword(newPassword), row.id]);
+  await destroySessionsForUser(row.id);
+  return { ok: true };
+}
+
+const PASSWORD_WORDS = ["Rincon", "Campus", "Verano", "Norte", "Andes", "Marea", "Lince", "Sur", "Cielo", "Rio"];
+
+function generateTempPassword(): string {
+  const pick = () => PASSWORD_WORDS[Math.floor(Math.random() * PASSWORD_WORDS.length)];
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `${pick()}${pick()}${digits}!`;
+}
+
+/** Admin-triggered reset: generates a new temporary password, invalidates every existing
+ * session for that account (so a stolen/shared old session can't keep riding along), and
+ * returns the plaintext once so the admin can relay it — it is never stored anywhere. */
+export async function resetUserPassword(alias: string): Promise<{ newPassword: string } | undefined> {
+  const user = await findUserByAlias(alias);
+  if (!user) return undefined;
+  const newPassword = generateTempPassword();
+  await run("UPDATE users SET password_hash = ? WHERE id = ?", [hashPassword(newPassword), user.id]);
+  await destroySessionsForUser(user.id);
+  return { newPassword };
 }
 
 export const ALIAS_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -367,6 +429,37 @@ export async function unfollowUser(followerId: string, followeeAlias: string) {
 export async function getFollowingAliases(userId: string): Promise<string[]> {
   const rows = await getAll<{ alias: string }>(
     "SELECT users.alias as alias FROM follows JOIN users ON users.id = follows.followee_id WHERE follows.follower_id = ?",
+    [userId]
+  );
+  return rows.map((r) => r.alias);
+}
+
+/** Blocking only hides that person's posts from your own feed — it doesn't stop them from
+ * seeing or interacting with your content, and isn't visible to them in any way. */
+export async function blockUser(blockerId: string, blockedAlias: string): Promise<{ ok: boolean; error?: string }> {
+  const blocked = await findUserByAlias(blockedAlias);
+  if (!blocked) return { ok: false, error: "No existe una cuenta con ese nombre de usuario." };
+  if (blocked.id === blockerId) return { ok: false, error: "No puedes bloquearte a ti mismo." };
+  await run("INSERT OR IGNORE INTO user_blocks (blocker_id, blocked_id) VALUES (?, ?)", [blockerId, blocked.id]);
+  return { ok: true };
+}
+
+export async function unblockUser(blockerId: string, blockedAlias: string): Promise<void> {
+  const blocked = await findUserByAlias(blockedAlias);
+  if (!blocked) return;
+  await run("DELETE FROM user_blocks WHERE blocker_id = ? AND blocked_id = ?", [blockerId, blocked.id]);
+}
+
+export async function isUserBlocked(blockerId: string, blockedAlias: string): Promise<boolean> {
+  const blocked = await findUserByAlias(blockedAlias);
+  if (!blocked) return false;
+  const row = await getOne("SELECT 1 as x FROM user_blocks WHERE blocker_id = ? AND blocked_id = ?", [blockerId, blocked.id]);
+  return !!row;
+}
+
+export async function getBlockedAliases(userId: string): Promise<string[]> {
+  const rows = await getAll<{ alias: string }>(
+    "SELECT users.alias as alias FROM user_blocks JOIN users ON users.id = user_blocks.blocked_id WHERE user_blocks.blocker_id = ?",
     [userId]
   );
   return rows.map((r) => r.alias);

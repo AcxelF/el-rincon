@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "recover";
 
 export default function AuthScreen({
   onAuthed,
@@ -16,13 +16,18 @@ export default function AuthScreen({
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [alias, setAlias] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoverDone, setRecoverDone] = useState(false);
+  const [revealCode, setRevealCode] = useState<{ code: string; user: { alias: string; isAdmin: boolean; isMuted: boolean } } | null>(null);
 
   function switchMode(next: Mode) {
-    setDirection(next === "register" ? "right" : "left");
+    setDirection(next === "login" ? "left" : "right");
     setMode(next);
     setError("");
+    setRecoverDone(false);
   }
 
   async function submit(e: React.FormEvent) {
@@ -40,7 +45,12 @@ export default function AuthScreen({
         setError(data.error || "Algo salió mal.");
         return;
       }
-      onAuthed({ alias: data.user.alias, isAdmin: !!data.user.isAdmin, isMuted: !!data.user.isMuted });
+      const user = { alias: data.user.alias, isAdmin: !!data.user.isAdmin, isMuted: !!data.user.isMuted };
+      if (mode === "register" && typeof data.recoveryCode === "string") {
+        setRevealCode({ code: data.recoveryCode, user });
+        return;
+      }
+      onAuthed(user);
     } catch {
       setError("No se pudo conectar. Intenta de nuevo.");
     } finally {
@@ -48,25 +58,51 @@ export default function AuthScreen({
     }
   }
 
-  const switchLink = (
-    <div style={{ textAlign: "center", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
-      {mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+  async function submitRecover(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias, code, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Algo salió mal.");
+        return;
+      }
+      setRecoverDone(true);
+    } catch {
+      setError("No se pudo conectar. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function linkButton(label: string, onClick: () => void) {
+    return (
       <button
         type="button"
-        onClick={() => switchMode(mode === "login" ? "register" : "login")}
-        style={{
-          background: "none",
-          border: 0,
-          padding: 0,
-          font: "inherit",
-          fontSize: 13,
-          fontWeight: 700,
-          color: "var(--color-accent-700)",
-          cursor: "pointer",
-        }}
+        onClick={onClick}
+        style={{ background: "none", border: 0, padding: 0, font: "inherit", fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", cursor: "pointer" }}
       >
-        {mode === "login" ? "Crear cuenta" : "Iniciar sesión"}
+        {label}
       </button>
+    );
+  }
+
+  const switchLink = (
+    <div style={{ textAlign: "center", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+      {mode === "recover" ? (
+        linkButton("Volver a iniciar sesión", () => switchMode("login"))
+      ) : (
+        <>
+          {mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+          {linkButton(mode === "login" ? "Crear cuenta" : "Iniciar sesión", () => switchMode(mode === "login" ? "register" : "login"))}
+        </>
+      )}
     </div>
   );
 
@@ -100,6 +136,9 @@ export default function AuthScreen({
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           style={{ minHeight: 42, paddingLeft: 16 }}
         />
+        {mode === "login" && (
+          <div style={{ textAlign: "right", marginTop: 6 }}>{linkButton("¿Olvidaste tu contraseña?", () => switchMode("recover"))}</div>
+        )}
       </div>
 
       {error && <div style={{ fontSize: 13, color: "var(--color-accent-2-700)" }}>{error}</div>}
@@ -110,11 +149,118 @@ export default function AuthScreen({
     </form>
   );
 
+  const recoverForm = recoverDone ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+        Listo, tu contraseña fue actualizada. Ya puedes iniciar sesión con la nueva.
+      </div>
+      <button className="btn btn-primary" type="button" style={{ minHeight: 44 }} onClick={() => switchMode("login")}>
+        Iniciar sesión
+      </button>
+    </div>
+  ) : (
+    <form onSubmit={submitRecover} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="field">
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          Nombre de usuario
+        </label>
+        <input
+          className="input auth-input"
+          type="text"
+          placeholder="Nombre de usuario"
+          value={alias}
+          onChange={(e) => setAlias(e.target.value)}
+          autoComplete="username"
+          style={{ minHeight: 42, paddingLeft: 16 }}
+        />
+      </div>
+      <div className="field">
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          Código de recuperación
+        </label>
+        <input
+          className="input auth-input"
+          type="text"
+          placeholder="XXXX-XXXX-XXXX-XXXX"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          style={{ minHeight: 42, paddingLeft: 16, fontFamily: "monospace" }}
+        />
+      </div>
+      <div className="field">
+        <label style={{ display: "block", fontSize: 12, marginBottom: 5, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+          Nueva contraseña
+        </label>
+        <input
+          className="input auth-input"
+          type="password"
+          placeholder="Mínimo 6 caracteres"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
+          style={{ minHeight: 42, paddingLeft: 16 }}
+        />
+      </div>
+
+      {error && <div style={{ fontSize: 13, color: "var(--color-accent-2-700)" }}>{error}</div>}
+
+      <button className="btn btn-primary" type="submit" disabled={loading} style={{ minHeight: 44, marginTop: 4 }}>
+        {loading ? "Un momento…" : "Cambiar contraseña"}
+      </button>
+    </form>
+  );
+
+  const revealPanel = revealCode && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+        Guarda este código en un lugar seguro. Es la <strong>única forma</strong> de recuperar tu cuenta si olvidas tu contraseña — no lo volveremos a mostrar.
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          className="input"
+          readOnly
+          value={revealCode.code}
+          style={{ flex: 1, minHeight: 42, fontFamily: "monospace", fontSize: 14, textAlign: "center", background: "var(--color-neutral-200)" }}
+        />
+        <button
+          type="button"
+          className="btn btn-secondary"
+          style={{ minHeight: 42 }}
+          onClick={() => navigator.clipboard.writeText(revealCode.code).catch(() => {})}
+        >
+          Copiar
+        </button>
+      </div>
+      <button
+        className="btn btn-primary"
+        type="button"
+        style={{ minHeight: 44 }}
+        onClick={() => {
+          const user = revealCode.user;
+          setRevealCode(null);
+          onAuthed(user);
+        }}
+      >
+        Ya lo guardé, continuar
+      </button>
+    </div>
+  );
+
   const footnote = (
     <div style={{ fontSize: 11.5, textAlign: "center", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
       No pedimos correo ni nombre real. Solo tú sabes quién eres detrás de tu nombre de usuario.
     </div>
   );
+
+  const titleText = revealPanel ? "Guarda tu código" : mode === "register" ? "Crea tu cuenta" : mode === "recover" ? "Recuperar cuenta" : "Inicia sesión";
+  const subtitleText = revealPanel
+    ? "Este código es tuyo y solo tuyo — no lo guardamos en ningún lado."
+    : mode === "register"
+      ? "Solo necesitas un nombre de usuario y una contraseña."
+      : mode === "recover"
+        ? "Usa tu código de recuperación para poner una contraseña nueva."
+        : "Entra con tu nombre de usuario.";
+  const activeContent = revealPanel || (mode === "recover" ? recoverForm : form);
 
   if (!onClose) {
     // Full-page variant: split-screen, mascot as the hero on one side.
@@ -170,15 +316,11 @@ export default function AuthScreen({
           <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 18, overflow: "hidden" }}>
             <div key={mode} data-dir={direction} className="auth-mode-slide" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, color: "var(--color-text)" }}>
-                  {mode === "register" ? "Crea tu cuenta" : "Inicia sesión"}
-                </div>
-                <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 4 }}>
-                  {mode === "register" ? "Solo necesitas un nombre de usuario y una contraseña." : "Entra con tu nombre de usuario."}
-                </div>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, color: "var(--color-text)" }}>{titleText}</div>
+                <div style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginTop: 4 }}>{subtitleText}</div>
               </div>
-              {form}
-              {switchLink}
+              {activeContent}
+              {!revealPanel && switchLink}
             </div>
             {footnote}
           </div>
@@ -258,8 +400,8 @@ export default function AuthScreen({
             </div>
           </div>
           <div key={mode} data-dir={direction} className="auth-mode-slide" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {form}
-            {switchLink}
+            {activeContent}
+            {!revealPanel && switchLink}
           </div>
           {footnote}
         </div>

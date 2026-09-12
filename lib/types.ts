@@ -84,6 +84,7 @@ export interface DecoratedPost {
   isQuestion: boolean;
   bestAnswerId: number | null;
   isMine: boolean;
+  edited: boolean;
 }
 
 export interface DecoratedComment {
@@ -99,7 +100,7 @@ export interface DecoratedComment {
 
 export interface AppNotification {
   id: number;
-  type: "vote" | "like" | "comment" | "commentLike";
+  type: "vote" | "like" | "comment" | "commentLike" | "report";
   postId: number;
   commentId?: number;
   message: string;

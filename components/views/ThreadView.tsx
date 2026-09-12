@@ -30,6 +30,7 @@ export default function ThreadView({
   myInitials,
   isAdmin,
   onDeletePost,
+  onEditPost,
   onDeleteComment,
   onTogglePin,
   onReportPost,
@@ -59,6 +60,7 @@ export default function ThreadView({
   myInitials: string;
   isAdmin: boolean;
   onDeletePost: () => void;
+  onEditPost: (opts: { title: string; text: string }) => Promise<string | undefined>;
   onDeleteComment: (id: number) => void;
   onTogglePin: () => void;
   onReportPost: () => void;
@@ -74,6 +76,11 @@ export default function ThreadView({
   const replyRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title);
+  const [editText, setEditText] = useState(post.body);
+  const [editError, setEditError] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const canPickBestAnswer = post.isQuestion && (isAdmin || post.author === myAlias);
 
   function replyToComment(author: string) {
@@ -81,6 +88,25 @@ export default function ThreadView({
     onReplyChange(reply.startsWith(mention) ? reply : mention + reply);
     replyRef.current?.focus();
     replyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function startEdit() {
+    setEditTitle(post.title);
+    setEditText(post.body);
+    setEditError("");
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    setEditSaving(true);
+    setEditError("");
+    const err = await onEditPost({ title: editTitle, text: editText });
+    setEditSaving(false);
+    if (err) {
+      setEditError(err);
+      return;
+    }
+    setEditing(false);
   }
 
   return (
@@ -98,6 +124,11 @@ export default function ThreadView({
           <button className="btn btn-ghost" style={{ fontSize: 14 }} disabled={post.reported} onClick={onReportPost}>
             {post.reported ? "🚩 Reportado" : "🚩 Reportar"}
           </button>
+          {post.isMine && !editing && (
+            <button className="btn btn-ghost" style={{ fontSize: 14 }} onClick={startEdit}>
+              ✏️ Editar
+            </button>
+          )}
           {(isAdmin || post.isMine) && (
             <button className="btn btn-ghost" style={{ fontSize: 14, color: "var(--color-accent-2-700)" }} onClick={() => setConfirmingDelete(true)}>
               {post.isMine ? "🗑 Eliminar hilo" : "🗑 Eliminar hilo (admin)"}
@@ -136,11 +167,49 @@ export default function ThreadView({
           )}
           <span>· {post.time}</span>
         </div>
-        <h1 style={{ margin: 0, fontSize: 32, lineHeight: 1.12 }}>{stripFormatMarkers(post.title)}</h1>
-        {post.body !== post.title && (
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
-            {renderFormattedText(post.body)}
-          </p>
+        {editing ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input
+              className="input"
+              placeholder="Título (opcional)"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              style={{ fontSize: 18, fontWeight: 600 }}
+              maxLength={120}
+            />
+            <textarea
+              className="input"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              style={{ fontSize: 15, minHeight: 120, resize: "vertical" }}
+              maxLength={2000}
+            />
+            {editError && <div style={{ fontSize: 13, color: "var(--color-accent-2-700)" }}>{editError}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-primary" disabled={editSaving || !editText.trim()} onClick={saveEdit}>
+                {editSaving ? "Guardando…" : "Guardar"}
+              </button>
+              <button className="btn btn-secondary" disabled={editSaving} onClick={() => setEditing(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 style={{ margin: 0, fontSize: 32, lineHeight: 1.12 }}>
+              {stripFormatMarkers(post.title)}
+              {post.edited && (
+                <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 10, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+                  (editado)
+                </span>
+              )}
+            </h1>
+            {post.body !== post.title && (
+              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, maxWidth: "62ch", color: "color-mix(in srgb, var(--color-text) 82%, transparent)" }}>
+                {renderFormattedText(post.body)}
+              </p>
+            )}
+          </>
         )}
         {post.imageUrl && (
           <img
