@@ -17,6 +17,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 
 const SORTS: SortMode[] = ["Recientes", "Populares"];
 const MAX_POLL_OPTIONS = 4;
+const MAX_POST_IMAGES = 4;
 const FEED_EXCERPT_LIMIT = 240;
 
 const SEARCH_SECTION_LABEL: React.CSSProperties = {
@@ -64,7 +65,7 @@ export default function FeedView({
   onDraftChange,
   draftTitle,
   onDraftTitleChange,
-  draftImageUrl,
+  draftImageUrls,
   uploadingImage,
   imageError,
   onUploadImage,
@@ -111,11 +112,11 @@ export default function FeedView({
   onDraftChange: (v: string) => void;
   draftTitle: string;
   onDraftTitleChange: (v: string) => void;
-  draftImageUrl: string | null;
+  draftImageUrls: string[];
   uploadingImage: boolean;
   imageError: string;
   onUploadImage: (file: File) => void;
-  onRemoveImage: () => void;
+  onRemoveImage: (index: number) => void;
   categories: Category[];
   defaultCatId: string;
   followedCategoryIds: string[];
@@ -569,34 +570,38 @@ export default function FeedView({
               <div style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>Subiendo imagen…</div>
             )}
             {imageError && <div style={{ fontSize: 12.5, color: "var(--color-accent-2-800)" }}>{imageError}</div>}
-            {draftImageUrl && !uploadingImage && (
-              <div style={{ position: "relative", width: "fit-content" }}>
-                <img
-                  src={draftImageUrl}
-                  alt=""
-                  style={{ maxHeight: 160, maxWidth: "100%", borderRadius: "var(--radius-md)", display: "block" }}
-                />
-                <button
-                  type="button"
-                  aria-label="Quitar imagen"
-                  onClick={onRemoveImage}
-                  style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    display: "grid",
-                    placeItems: "center",
-                    width: 24,
-                    height: 24,
-                    borderRadius: 999,
-                    border: 0,
-                    background: "rgba(10, 14, 24, 0.65)",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  <X size={13} />
-                </button>
+            {draftImageUrls.length > 0 && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {draftImageUrls.map((url, i) => (
+                  <div key={url} style={{ position: "relative", width: 100, height: 100 }}>
+                    <img
+                      src={url}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "var(--radius-md)", display: "block" }}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Quitar imagen"
+                      onClick={() => onRemoveImage(i)}
+                      style={{
+                        position: "absolute",
+                        top: 6,
+                        right: 6,
+                        display: "grid",
+                        placeItems: "center",
+                        width: 24,
+                        height: 24,
+                        borderRadius: 999,
+                        border: 0,
+                        background: "rgba(10, 14, 24, 0.65)",
+                        color: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -838,7 +843,7 @@ export default function FeedView({
                           imageInputRef.current?.click();
                           setAttachMenuOpen(false);
                         }}
-                        disabled={uploadingImage}
+                        disabled={uploadingImage || draftImageUrls.length >= MAX_POST_IMAGES}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -847,17 +852,19 @@ export default function FeedView({
                           padding: "8px 10px",
                           border: 0,
                           borderRadius: "var(--radius-sm)",
-                          background: draftImageUrl ? "var(--color-accent-200)" : "transparent",
-                          color: draftImageUrl ? "var(--color-accent-900)" : "var(--color-text)",
+                          background: draftImageUrls.length > 0 ? "var(--color-accent-200)" : "transparent",
+                          color: draftImageUrls.length > 0 ? "var(--color-accent-900)" : "var(--color-text)",
                           fontSize: 13.5,
-                          fontWeight: draftImageUrl ? 600 : 500,
+                          fontWeight: draftImageUrls.length > 0 ? 600 : 500,
                           cursor: "pointer",
                           textAlign: "left",
                         }}
                       >
                         <ImageIcon size={16} style={{ flex: "none" }} />
-                        <span style={{ flex: 1 }}>Imagen</span>
-                        {draftImageUrl && <Check size={14} weight="bold" style={{ flex: "none" }} />}
+                        <span style={{ flex: 1 }}>
+                          Imagen {draftImageUrls.length > 0 && `(${draftImageUrls.length}/${MAX_POST_IMAGES})`}
+                        </span>
+                        {draftImageUrls.length > 0 && <Check size={14} weight="bold" style={{ flex: "none" }} />}
                       </button>
                     </div>,
                       document.body
@@ -1078,14 +1085,14 @@ export default function FeedView({
                 )}
               </>
             )}
-            {p.imageUrl && (
+            {p.imageUrls.length === 1 && (
               <img
-                src={p.imageUrl}
+                src={p.imageUrls[0]}
                 alt=""
                 loading="lazy"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightboxUrl(p.imageUrl);
+                  setLightboxUrl(p.imageUrls[0]);
                 }}
                 style={{
                   width: "100%",
@@ -1096,6 +1103,31 @@ export default function FeedView({
                   display: "block",
                 }}
               />
+            )}
+            {p.imageUrls.length > 1 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                {p.imageUrls.map((url, i) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxUrl(url);
+                    }}
+                    style={{
+                      width: "100%",
+                      aspectRatio: "1 / 1",
+                      objectFit: "cover",
+                      borderRadius: "var(--radius-md)",
+                      cursor: "pointer",
+                      display: "block",
+                      gridColumn: p.imageUrls.length === 3 && i === 2 ? "1 / -1" : undefined,
+                    }}
+                  />
+                ))}
+              </div>
             )}
             {p.poll && <Poll poll={p.poll} onVote={(optionId) => onVotePoll(p.id, optionId)} />}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 3 }}>

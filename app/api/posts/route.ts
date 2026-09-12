@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findUserByAlias, getUserFromRequest, normalizeAlias } from "@/lib/auth";
-import { createPost, listPosts, listPostsByAuthor, POSTS_PAGE_SIZE } from "@/lib/posts";
+import { createPost, listPosts, listPostsByAuthor, MAX_POST_IMAGES, POSTS_PAGE_SIZE } from "@/lib/posts";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { CATEGORIES } from "@/lib/mock-data";
 
 const VALID_CATEGORY_IDS = new Set(CATEGORIES.filter((c) => c.id !== "all").map((c) => c.id));
+const BLOB_URL_PATTERN = /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//;
 
 export async function GET(request: NextRequest) {
   const viewer = await getUserFromRequest(request);
@@ -45,8 +46,11 @@ export async function POST(request: NextRequest) {
   const isQuestion = !!body?.isQuestion;
   const pollOptions = Array.isArray(body?.pollOptions) ? body.pollOptions.filter((o: unknown) => typeof o === "string") : undefined;
 
-  const imageUrlRaw = typeof body?.imageUrl === "string" ? body.imageUrl.trim() : "";
-  if (imageUrlRaw && !/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//.test(imageUrlRaw)) {
+  const imageUrlsRaw = Array.isArray(body?.imageUrls) ? body.imageUrls.filter((u: unknown) => typeof u === "string") : [];
+  if (imageUrlsRaw.length > MAX_POST_IMAGES) {
+    return NextResponse.json({ error: `Puedes subir hasta ${MAX_POST_IMAGES} imágenes por publicación.` }, { status: 400 });
+  }
+  if (imageUrlsRaw.some((u: string) => !BLOB_URL_PATTERN.test(u))) {
     return NextResponse.json({ error: "Imagen inválida." }, { status: 400 });
   }
 
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     cat,
     text,
     title: title || undefined,
-    imageUrl: imageUrlRaw || undefined,
+    imageUrls: imageUrlsRaw,
     pollOptions,
     isQuestion,
   });

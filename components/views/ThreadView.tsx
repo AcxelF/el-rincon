@@ -211,13 +211,34 @@ export default function ThreadView({
             )}
           </>
         )}
-        {post.imageUrl && (
+        {post.imageUrls.length === 1 && (
           <img
-            src={post.imageUrl}
+            src={post.imageUrls[0]}
             alt=""
-            onClick={() => setLightboxUrl(post.imageUrl)}
+            onClick={() => setLightboxUrl(post.imageUrls[0])}
             style={{ width: "100%", maxHeight: 560, objectFit: "cover", borderRadius: "var(--radius-lg)", display: "block", cursor: "pointer" }}
           />
+        )}
+        {post.imageUrls.length > 1 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {post.imageUrls.map((url, i) => (
+              <img
+                key={url}
+                src={url}
+                alt=""
+                onClick={() => setLightboxUrl(url)}
+                style={{
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  objectFit: "cover",
+                  borderRadius: "var(--radius-lg)",
+                  display: "block",
+                  cursor: "pointer",
+                  gridColumn: post.imageUrls.length === 3 && i === 2 ? "1 / -1" : undefined,
+                }}
+              />
+            ))}
+          </div>
         )}
         {post.poll && (
           <div style={{ maxWidth: 420 }}>

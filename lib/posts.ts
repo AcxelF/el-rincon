@@ -5,6 +5,8 @@ import type { AppNotification, DecoratedComment, DecoratedPoll, DecoratedPost, R
 
 const CATEGORY_NAMES: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.name]));
 
+export const MAX_POST_IMAGES = 4;
+
 function categoryLabel(id: string): string {
   return CATEGORY_NAMES[id] ?? id;
 }
@@ -34,7 +36,6 @@ interface PostRow {
   title: string;
   excerpt: string;
   body: string;
-  imageUrl: string | null;
   isQuestion: number;
   bestAnswerId: number | null;
   pinned: number;
@@ -50,7 +51,7 @@ interface PostRow {
 const POST_SELECT = `
   SELECT
     p.id as id, p.cat as cat, p.author as author, p.author_user_id as authorUserId,
-    p.created_at as createdAt, p.title as title, p.excerpt as excerpt, p.body as body, p.image_url as imageUrl,
+    p.created_at as createdAt, p.title as title, p.excerpt as excerpt, p.body as body,
     p.is_question as isQuestion, p.best_answer_id as bestAnswerId, p.pinned as pinned, p.edited_at as editedAt,
     COALESCE((SELECT SUM(value) FROM post_votes WHERE post_id = p.id), 0) as votes,
     COALESCE((SELECT COUNT(*) FROM post_likes WHERE post_id = p.id), 0) as likes,
@@ -83,6 +84,11 @@ async function decoratePollFor(postId: number, viewerUserId: string | null): Pro
   };
 }
 
+async function getImagesFor(postId: number): Promise<string[]> {
+  const rows = await getAll<{ url: string }>("SELECT url FROM post_images WHERE post_id = :postId ORDER BY position ASC", { postId });
+  return rows.map((r) => r.url);
+}
+
 async function decorateRow(row: PostRow, viewerUserId: string | null): Promise<DecoratedPost> {
   return {
     id: row.id,
@@ -92,7 +98,7 @@ async function decorateRow(row: PostRow, viewerUserId: string | null): Promise<D
     title: row.title,
     excerpt: row.excerpt,
     body: row.body,
-    imageUrl: row.imageUrl ?? null,
+    imageUrls: await getImagesFor(row.id),
     votes: row.votes,
     commentCount: row.commentCount,
     voteValue: (row.voteValue ?? 0) as VoteValue,
@@ -215,15 +221,15 @@ export async function createPost(opts: {
   cat: string;
   text: string;
   title?: string;
-  imageUrl?: string | null;
+  imageUrls?: string[];
   pollOptions?: string[];
   isQuestion?: boolean;
 }): Promise<number> {
   const author = opts.anon ? randomAnonLabel() : opts.alias;
   const title = opts.title?.trim() || (opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text);
   const result = await run(
-    `INSERT INTO posts (cat, author, author_user_id, is_anon, title, excerpt, body, image_url, is_question)
-     VALUES (:cat, :author, :userId, :isAnon, :title, :excerpt, :body, :imageUrl, :isQuestion)`,
+    `INSERT INTO posts (cat, author, author_user_id, is_anon, title, excerpt, body, is_question)
+     VALUES (:cat, :author, :userId, :isAnon, :title, :excerpt, :body, :isQuestion)`,
     {
       cat: opts.cat,
       author,
@@ -232,11 +238,14 @@ export async function createPost(opts: {
       title,
       excerpt: opts.text,
       body: opts.text,
-      imageUrl: opts.imageUrl ?? null,
       isQuestion: opts.isQuestion ? 1 : 0,
     }
   );
   const postId = Number(result.lastInsertRowid);
+  const images = (opts.imageUrls ?? []).slice(0, MAX_POST_IMAGES);
+  for (let i = 0; i < images.length; i++) {
+    await run("INSERT INTO post_images (post_id, url, position) VALUES (:postId, :url, :position)", { postId, url: images[i], position: i });
+  }
   const cleanOptions = (opts.pollOptions ?? []).map((o) => o.trim()).filter(Boolean);
   if (cleanOptions.length >= 2) {
     for (let i = 0; i < cleanOptions.length; i++) {
@@ -247,7 +256,7 @@ export async function createPost(opts: {
 }
 
 /** Edits a post's title/body/category in place and stamps it as edited. Poll options and the
- * attached image are intentionally left alone — editing those mid-thread would invalidate votes
+ * attached images are intentionally left alone — editing those mid-thread would invalidate votes
  * already cast or require re-uploading, which is out of scope for a typo fix. */
 export async function updatePost(postId: number, opts: { text: string; title?: string; cat?: string }): Promise<void> {
   const title = opts.title?.trim() || (opts.text.length > 70 ? opts.text.slice(0, 70) + "…" : opts.text);

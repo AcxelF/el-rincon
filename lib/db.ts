@@ -79,6 +79,12 @@ const SCHEMA_STATEMENTS = [
     image_url TEXT,
     edited_at TEXT
   )`,
+  `CREATE TABLE IF NOT EXISTS post_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    position INTEGER NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS poll_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -195,6 +201,13 @@ async function migrate() {
   if (!postColumns.includes("edited_at")) {
     await db.execute(`ALTER TABLE posts ADD COLUMN edited_at TEXT`);
   }
+  // One-time carry-over from the old single-image column into post_images (now a post can have
+  // up to 4). Guarded so it only ever backfills a post once, even across repeated migrate() runs.
+  await db.execute(`
+    INSERT INTO post_images (post_id, url, position)
+    SELECT id, image_url, 0 FROM posts
+    WHERE image_url IS NOT NULL AND id NOT IN (SELECT post_id FROM post_images)
+  `);
 }
 
 export const dbReady: Promise<void> = globalThis.__rinconDbReady ?? migrate();

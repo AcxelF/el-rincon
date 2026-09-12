@@ -20,6 +20,7 @@ import type { AppNotification, BadgeInfo, Category, Chat, DecoratedPost, Ranking
 const THEME_KEY = "rincon-theme";
 const FOLLOWED_CATEGORIES_KEY = "rincon-followed-categories";
 const POSTS_PAGE_SIZE = 20;
+const MAX_POST_IMAGES = 4;
 const DRAFT_KEY = "rincon-post-draft";
 
 interface ProfileStats {
@@ -55,7 +56,7 @@ export default function ElRinconApp({
   const [dark, setDark] = useState(false);
   const [draft, setDraft] = useState("");
   const [draftTitle, setDraftTitle] = useState("");
-  const [draftImageUrl, setDraftImageUrl] = useState<string | null>(null);
+  const [draftImageUrls, setDraftImageUrls] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState("");
   const [reply, setReply] = useState("");
@@ -268,7 +269,7 @@ export default function ElRinconApp({
         const parsed = JSON.parse(savedDraft);
         if (typeof parsed.text === "string") setDraft(parsed.text);
         if (typeof parsed.title === "string") setDraftTitle(parsed.title);
-        if (typeof parsed.imageUrl === "string") setDraftImageUrl(parsed.imageUrl);
+        if (Array.isArray(parsed.imageUrls)) setDraftImageUrls(parsed.imageUrls.filter((u: unknown) => typeof u === "string"));
       }
     } catch {
       // localStorage unavailable, or a corrupt draft — start with an empty composer
@@ -286,15 +287,15 @@ export default function ElRinconApp({
   // post actually publishes. Poll options and toggles aren't persisted, only the core content.
   useEffect(() => {
     try {
-      if (!draft.trim() && !draftTitle.trim() && !draftImageUrl) {
+      if (!draft.trim() && !draftTitle.trim() && draftImageUrls.length === 0) {
         window.localStorage.removeItem(DRAFT_KEY);
       } else {
-        window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ text: draft, title: draftTitle, imageUrl: draftImageUrl }));
+        window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ text: draft, title: draftTitle, imageUrls: draftImageUrls }));
       }
     } catch {
       // localStorage unavailable — the draft just won't survive a reload
     }
-  }, [draft, draftTitle, draftImageUrl]);
+  }, [draft, draftTitle, draftImageUrls]);
 
   useEffect(() => {
     if (isGuest) return;
@@ -609,6 +610,10 @@ export default function ElRinconApp({
   async function uploadImage(file: File) {
     if (!requireAuth()) return;
     setImageError("");
+    if (draftImageUrls.length >= MAX_POST_IMAGES) {
+      setImageError(`Puedes subir hasta ${MAX_POST_IMAGES} imágenes por publicación.`);
+      return;
+    }
     if (!file.type.startsWith("image/")) {
       setImageError("Solo se pueden subir imágenes.");
       return;
@@ -620,7 +625,7 @@ export default function ElRinconApp({
     setUploadingImage(true);
     try {
       const blob = await upload(file.name, file, { access: "public", handleUploadUrl: "/api/upload" });
-      setDraftImageUrl(blob.url);
+      setDraftImageUrls((prev) => [...prev, blob.url]);
     } catch (err) {
       setImageError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
     } finally {
@@ -628,8 +633,8 @@ export default function ElRinconApp({
     }
   }
 
-  function removeImage() {
-    setDraftImageUrl(null);
+  function removeImage(index: number) {
+    setDraftImageUrls((prev) => prev.filter((_, i) => i !== index));
     setImageError("");
   }
 
@@ -642,12 +647,12 @@ export default function ElRinconApp({
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, title: title || undefined, cat: catId, pollOptions, isQuestion, anon, imageUrl: draftImageUrl || undefined }),
+      body: JSON.stringify({ text, title: title || undefined, cat: catId, pollOptions, isQuestion, anon, imageUrls: draftImageUrls }),
     });
     if (!res.ok) return false;
     setDraft("");
     setDraftTitle("");
-    setDraftImageUrl(null);
+    setDraftImageUrls([]);
     setSort("Recientes");
     setCat(catId);
     await refreshPosts();
@@ -945,7 +950,7 @@ export default function ElRinconApp({
               onDraftChange={setDraft}
               draftTitle={draftTitle}
               onDraftTitleChange={setDraftTitle}
-              draftImageUrl={draftImageUrl}
+              draftImageUrls={draftImageUrls}
               uploadingImage={uploadingImage}
               imageError={imageError}
               onUploadImage={uploadImage}
